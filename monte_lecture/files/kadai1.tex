@@ -1,0 +1,44 @@
+\documentclass[dvipdfmx,autodetect-engine]{jsarticle}% autodetect-engine で pLaTeX / upLaTeX を自動判定
+\usepackage[dvipdfmx]{graphicx}
+
+\title{モンテカルロ課題1}
+\author{16x3128 馬場俊弥（よこ）}
+\date{}
+
+\begin{document}
+\maketitle
+\section{課題3}
+区間(-1,1)の乱数x, yを発生させ，単位円内(円の内側)に一様に分布するx,y座標を出力するプログラムを作成した。gnuplotで表示した図を以下に示す。
+
+
+
+\begin{center}
+\includegraphics[width=10cm]{img.jpg}\\
+図1 単位円内に一様に点を打った結果
+\end{center}
+
+\section{課題4}
+円周率は円の中に入った点の数(nとする)と合計の点の数(NUMとする)の割合から計算することができる。\\
+今回xとyの範囲は(-1, 1)であるため、
+\[\frac{(円の面積)}{(点が入る正方形の面積)} = \frac{n}{NUM}\]
+\[\frac{π * 1 * 1}{2 * 2} = \frac{n}{NUM}\]
+\[\frac{π}{4} = \frac{n}{NUM}\]
+よって、\\
+\[π = \frac{4n}{NUM}\]
+として円周率を求めることができる。\\
+配布されたプログラムを用いてこの方法で計算を行うと\\
+3.192\\
+3.032\\
+3.188\\
+3.152\\
+のように多少ばらつきはあるが3.14に近い結果になった。
+
+
+また、今回は点の数NUMが1E3となっているが1E5をした場合の計算結果は\\
+3.139\\
+3.135\\
+3.144\\
+3.129\\
+このようにNUMが1E3の時よりも3.14に近い結果になった。これは試行回数が多い方がより正確性が上がるからだと考えられる。
+
+\end{document}
