@@ -1,6 +1,7 @@
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sstream>
 #include <math.h>
 #include <time.h>
 #include <iomanip>
@@ -63,6 +64,7 @@ int main()
 
 	int is_inverse = 1;
 
+	/*---- 時間計測開始&過去のログ表示 start ----*/
 	clock_t start = clock();
 	int is_pre = 1;
 	outputTextFile(cond, is_pre);
@@ -70,6 +72,8 @@ int main()
 	int is_before = 1;
 	saveTextFile(cond, is_before);
 	outputTextFile(cond);
+	/*---- 時間計測開始&過去のログ表示  end -----*/
+
 
 	// std::string readFileName1 = "backproj_float_128-128-128.raw";
 	// std::string readFileName2 = "./read_img/efficiency_correction_float_512-256-180.raw";
@@ -129,7 +133,7 @@ int main()
 	// writeRawFile(last, h);
 	/*---------------------------*/
 
-
+	/*---- 時間計測終了&ログ書き込み start ----*/
 	clock_t end = clock();
 
   cond.time = static_cast<double>(end - start) / CLOCKS_PER_SEC;
@@ -137,6 +141,8 @@ int main()
   std::cout << "time = " << cond.time << "[s]\n"
   					 <<	"     = " << cond.time / 60 << "[min]\n"
   					 << "     = " << cond.time / 3600 << "[h]" << std::endl;
+	/*---- 時間計測終了&ログ書き込み  end  ----*/
+
 }
 
 void mlem(std::vector<float> &f, std::vector<float> &g, std::vector<float> &h, std::vector<float> &original_img, struct Condition cond)
@@ -261,12 +267,12 @@ void Projecion_SinglePinhole_3d(std::vector<float> &f, std::vector<float> &g, st
 								if(original_img[d * cond.img_w * cond.img_h + i * cond.img_w + j] > 0.26) { count_ca++; }
 								if(original_img[d * cond.img_w * cond.img_h + i * cond.img_w + j] > 0.14) { count_h2o++; }
 								std::cout << "count_h2o = " << count_h2o << std::endl;
-								
+
 								float mu_h2o = 0.1538;
 								float mu_ca = 0.2748;
 
-								g[cond.detector_size_w * cond.detector_size_h * (theta_degree / delta_detector) + cond.detector_size_w * m + n] += val * expf(- mu_h2o * count_h2o * cond.img_pixel_size - mu_ca * count_ca * cond.img_pixel_size);	
-								// g[cond.detector_size_w * cond.detector_size_h * (theta_degree / delta_detector) + cond.detector_size_w * m + n] += val;	
+								g[cond.detector_size_w * cond.detector_size_h * (theta_degree / delta_detector) + cond.detector_size_w * m + n] += val * expf(- mu_h2o * count_h2o * cond.img_pixel_size - mu_ca * count_ca * cond.img_pixel_size);
+								// g[cond.detector_size_w * cond.detector_size_h * (theta_degree / delta_detector) + cond.detector_size_w * m + n] += val;
 							}
 						}
 						X +=  cos(theta_collimator_zy[cond.detector_size_w * m + n]) * sin(theta - theta_collimator_xy[cond.detector_size_w * m + n]);
@@ -384,7 +390,6 @@ void saveTextFile(struct Condition cond, int is_before)
   					 << "d_width = " << cond.d_width << "\n"
   					 << "d_height = " << cond.d_height << "\n"
   					 << "img_pixel_size = " << cond.img_pixel_size;
-  					 
 
   if(is_before == 0)
 	{
@@ -392,7 +397,7 @@ void saveTextFile(struct Condition cond, int is_before)
   					 	 << "     = " << cond.time / 60 << "[min]\n"
   					   << "     = " << cond.time / 3600 << "[h]";
 	}
-  outputfile.close();	
+  outputfile.close();
 }
 
 std::string showCurrentTime()
