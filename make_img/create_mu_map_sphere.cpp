@@ -132,12 +132,12 @@ void create_mu_map_h2o(float* f)
 				float z =   (D - 1.0) / 2.0 - i;
 				
 				// printf("x = %f, y = %f\n", x, y);
-				float pixel_size = 0.25;
+				float pixel_size = 0.1;
 				x *= pixel_size;
 				y *= pixel_size;
 				z *= pixel_size;
 
-				if(pow(x, 2.) + pow(y, 2.) + pow(z, 2.) < pow(12, 2.)) { f[i * W * H + j * W + k] = 0.15; }
+				if(pow(x, 2.) + pow(y, 2.) + pow(z, 2.) < pow(5, 2.)) { f[i * W * H + j * W + k] = 100; }
 			}
 		}
 	}

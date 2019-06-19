@@ -5,9 +5,9 @@ using namespace std;
 #include <math.h>
 #include <random>
 
-#define H 32
-#define W 32
-#define D 32
+#define H 64
+#define W 64
+#define D 64
 
 /*
 mu-mapの作成
@@ -43,7 +43,7 @@ int main()
 	// h2oのmumap
 	{
 		create_mu_map_h2o(f);
-		writeRawFile("mu-map_h2o_sphere_float_32-32-32.raw", H * W * D, f);
+		writeRawFile("Sphere_absorp_map_float_64-64-64.raw", H * W * D, f);
 	}
 
 	// airのmumap
@@ -139,7 +139,7 @@ void create_mu_map_h2o(float* f)
 				y *= 0.2;
 				z *= 0.2;
 
-				if(pow(x, 2.) + pow(y, 2.) + pow(z, 2.) < pow(2, 2.)) { f[i * W * H + j * W + k] = 0.15; }
+				if(pow(x, 2.) + pow(y, 2.) + pow(z, 2.) < pow(5, 2.)) { f[i * W * H + j * W + k] = 0.15; }
 			}
 		}
 	}
