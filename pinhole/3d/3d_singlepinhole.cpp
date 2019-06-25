@@ -9,7 +9,7 @@ using namespace std;
 #define N 360
 #define D 512
 
-const char readFileName[] = "sphere_float_128-128-128.raw";
+const char readFileName[] = "Shepp_float_128-128-128.raw";
 const char writeFileName1[] = "sphere_singlepinhole_float_512-256-360.raw";
 const char writeFileName2[] = "sphere_singlepinhole_float_128-128-128.raw";
 

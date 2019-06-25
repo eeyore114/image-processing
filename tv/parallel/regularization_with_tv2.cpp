@@ -16,8 +16,6 @@ void computeTVgradient(std::vector<float> &f, std::vector<float> &v, struct Cond
 void outputTextFile(struct Condition cond, int is_pre = 0);
 void saveTextFile(struct Condition cond, int is_before = 0);
 
-
-
 struct Condition {
 	int img_w;
 	int img_h;
@@ -41,7 +39,7 @@ int main()
 	cond.img_h = 128;
 	cond.detector_num = 20;
 	cond.detector_size = 128;
-	cond.update_count = 10;
+	cond.update_count = 400;
 	cond.distance_img_bottom_to_detector = 10;
 	cond.text_name = "condition.txt";
 	/*---- 使ってない ----*/
@@ -74,9 +72,6 @@ int main()
 	int is_inverse = 1;
 	ParallelProjecion(proj_img, bproj_img, cond, is_inverse);
 
-	writeRawFile("./result/test/proj_float_128-20.raw", proj_img);
-	writeRawFile("./result/test/bproj_float_128-128.raw", bproj_img);
-
 	RegurarizationWithTV(proj_img, bproj_img, cond);
 
 	/*---- MLEMだけの場合 ----*/
@@ -106,20 +101,24 @@ int main()
 void RegurarizationWithTV(std::vector<float> &proj_img, std::vector<float> &bproj_img, struct Condition cond)
 {
 	std::ostringstream ostr;
+	int mlem_count = 5;
+	int tv_count = 2;
 
 	for(int update_count = 0; update_count < cond.update_count; update_count++)
 	{
 		std::cout << update_count + 1 << " times processing..." << std::endl;
 		std::vector<float> bproj_img_with_tv(bproj_img.size(), 0.);
-		for(int i = 0; i < 10; i++) {	mlem(bproj_img, proj_img, bproj_img_with_tv, cond); }
+		for(int i = 0; i < mlem_count; i++) {	mlem(bproj_img, proj_img, bproj_img_with_tv, cond); }
 
 		for(int i = 0; i < bproj_img_with_tv.size(); i++) { if(bproj_img_with_tv[i] < 0.) { bproj_img_with_tv[i] = 0.; }}
 
 		std::vector<float> v(bproj_img.size(), 0.);
-		computeTVgradient(bproj_img_with_tv, v, cond);
-		float a = 0.5;
-		for(int i = 0; i < bproj_img.size(); i++) { bproj_img_with_tv[i] -= a * v[i]; }
-
+		for(int i = 0; i < tv_count; i++)
+		{
+			computeTVgradient(bproj_img_with_tv, v, cond);
+			float a = 0.2;
+			for(int i = 0; i < bproj_img.size(); i++) { bproj_img_with_tv[i] -= a * v[i]; }
+		}
 		for(int i = 0; i < bproj_img_with_tv.size(); i++) { if(bproj_img_with_tv[i] < 0.) { bproj_img_with_tv[i] = 0.; }}
 
 		bproj_img = bproj_img_with_tv;
