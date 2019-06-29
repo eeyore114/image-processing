@@ -4,3 +4,4 @@
 *.bmp
 sphere_singlepinhole_float_512-256-360.raw
 Brain_3d_singlepinhole_float_512-256-360.raw
+.DS_Store

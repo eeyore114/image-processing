@@ -4,3 +4,6 @@ detector_num = 20
 detector_size = 128
 update_count = 100
 distance_img_bottom_to_detector = 10
+time = 654.19[s]
+     = 10.9032[min]
+     = 0.181719[h]
