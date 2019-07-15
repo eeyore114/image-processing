@@ -1,0 +1,17 @@
+--------------- condition ---------------
+date : 2019 July 11 Thursday 08:53:41
+
+img_w = 128
+img_h = 128
+detector_num = 180
+detector_size_w = 512
+rotation_radius = 25
+distance_collimator_to_detector = 7.5
+collimator_width = 0.2
+detector_pixel_size_w = 0.08
+img_pixel_size = 0.2
+pinhole_count = 3
+collimator_interval = 9
+collimator_theta = 0.523599
+-----------------------------------------
+
