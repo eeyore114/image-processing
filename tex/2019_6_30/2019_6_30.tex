@@ -1,0 +1,139 @@
+\documentclass[dvipdfmx,autodetect-engine,twocolumn,10pt]{jsarticle}% autodetect-engine で pLaTeX / upLaTeX を自動判定
+\setlength{\columnsep}{3zw}
+\usepackage[dvipdfmx]{graphicx}
+\usepackage{amsmath,amssymb}
+
+\title{シングルピンホールを用いた
+3次元画像のモンテカルロシミュレーション}
+\author{法政大学理工学部 応用情報工学科 4年 16X3128 馬場俊弥}
+\date{2019年6月30日}
+
+\begin{document}
+
+\maketitle
+\section{はじめに}
+SPECT（Single Photon Emission Computed Tomography）とは放射性同位元素（RI：Radio Isotope）を用いた放射性医薬品を体内に投与することによって，放射性医薬品から出る微量な放射線（γ線）をさまざなま方向から測定し，断層画像にする方法である．
+
+SPECTによる測定において，γ線を収集する方向を一定にするために，コリメータと呼ばれる装置を用いる．コリメータにはシングルピンホールコリメータ，マルチピンホールコリメータ，パラレルホールコリメータなどがある．コリメータのピンホールは本来円形をしているが，ピンホールの形を矩形にした，マルチ矩形ピンホールSPECTの開発を研究テーマとして研究を行なっている．この研究を進めるにあたり，今回は，モンテカルロシミュレーションを行うにあたり使用した感度補正，吸収補正，そしてサンプル点補間の紹介，また，通常の円形のコリメータを用いて，シングルピンホールコリメータを用いた3次元画像のモンテカルロシミュレーションの結果を紹介する．
+
+
+\section{補正，補間処理}
+
+\subsection{感度補正}
+感度補正とはピンホールコリメータで検出する際に生じる検出感度の不均一を考慮したものである．理想的な直線モデルを$P_{ideal}$，感度分布を$P_{sensitivity}$から感度法制フィルタ$P_{filter}$を作成し，投影データに掛け合わせることで補正を行う．
+\[
+  P_{filter} = \frac{P_{ideal}}{P_{sensitivity}}
+\]
+
+\subsection{吸収補正}
+光子が媒質と相互作用を起こすことによって、理想的なカウントよりも減少してしまう. これを考慮するために吸収補正を行う.吸収補正の式を以下に示す．
+
+\[
+  N' = N exp(\mu x)
+\]
+
+\begin{table}[htbp]
+  \begin{center}
+    \begin{tabular}{|c|c|} \hline
+      $N$ & 発生光子数 \\ \hline
+      $N'$ & 検出光子数 \\ \hline
+      $\mu$ & 線減衰係数 \\ \hline
+      $x$ & 媒質中の移動距離 \\ \hline
+    \end{tabular}
+  \end{center}
+\end{table}
+
+\subsection{サンプル点補間}
+検出器のサンプル点から仮想的に伸ばす投影線が，再構成空間上で通過しない箇所がある場合にアーチファクトが生じてしまう．これを防ぐために，検出器のサンプル点を仮想的に増やす処理を行う．
+
+\newpage
+
+\section{3次元画像のモンテカルロシミュレーション}
+シミュレーションに使用した原画像を図\ref{original_img}に，シミュレーション条件を表\ref{simu_cond}に示す．
+
+\begin{figure}[htbp]
+  \begin{center}
+    \includegraphics[width=3.0cm]{./file/single_original.png}\\
+    \caption{原画像（64 × 64 × 64 $voxel$）}
+    \label{original_img}
+  \end{center}
+\end{figure}
+
+\begin{table}[htbp]
+  \begin{center}
+    \caption{シミュレーション条件}
+    \label{simu_cond}
+    \small
+    \begin{tabular}{|c|c|} \hline
+      媒質 & $H_2O$ \\ \hline
+      発生光子数 & 200万個/$voxel$ \\ \hline
+      初期エネルギー & 140 KeV \\ \hline
+      投影数 & 180 投影 \\ \hline
+      最大散乱回数 & 5回 \\ \hline
+      初期散乱角 & ランダム \\ \hline
+      初期方位角 & ランダム \\ \hline
+      検出器のサイズ & 512×256×180 $voxel$ \\ \hline
+      検出器のピクセルサイズ & 0.08×0.08 $cm^2$ \\ \hline
+      カットオフエネルギー & 30 KeV \\ \hline
+      画像サイズ & 64×64×64 $voxel$ \\ \hline
+      画像のボクセルサイズ & 0.2×0.2×0.2 $cm^3$ \\ \hline
+      球の半径 & 5 $cm$ \\ \hline
+      回転半径 & 12 $cm$ \\ \hline
+      コリメータと検出器間の距離 & 7.5 $cm$ \\ \hline
+      ナイフエッジの角度 & 30度 \\ \hline
+      ピンホール径 & 0.2 $cm$ \\ \hline
+    \end{tabular}
+  \end{center}
+\end{table}
+
+\newpage
+\section{結果}
+
+prymary光子だけを検出した投影画像を図\ref{proj_img}に示す．
+\begin{figure}[htbp]
+  \begin{center}
+    \includegraphics[width=7cm]{./file/proj.png}
+    \caption{投影画像（prymary光子）}
+    \label{proj_img}
+  \end{center}
+\end{figure}
+
+また，0度のときの投影画像のプロファイルを図\ref{proj_profile}に示す．
+\begin{figure}[htbp]
+  \begin{center}
+    \includegraphics[width=7cm]{./file/proj_profile.png}
+    \caption{0度のときのプロファイル}
+    \label{proj_profile}
+  \end{center}
+\end{figure}
+
+次に，投影画像に感度補正をかけた画像の0度のときの投影画像のプロファイルを図\ref{correction_profile}に示す．
+\begin{figure}[htbp]
+  \begin{center}
+    \includegraphics[width=7cm]{./file/correction_profile.png}
+    \caption{感度補正後0度のときのプロファイル}
+    \label{correction_profile}
+  \end{center}
+\end{figure}
+
+最後に，MLEMを100回行った再構成画像とそのプロファイルをそれぞれ図\ref{reconst}，図\ref{reconst_profile}に示す．
+\begin{figure}[htbp]
+  \begin{center}
+    \includegraphics[width=3.0cm]{./file/reconst.png}
+    \caption{再構成画像（MLEM50回）}
+    \label{reconst}
+  \end{center}
+\end{figure}
+
+\begin{figure}[htbp]
+  \begin{center}
+    \includegraphics[width=7.0cm]{./file/reconst_profile.png}
+    \caption{再構成画像のプロファイル}
+    \label{reconst_profile}
+  \end{center}
+\end{figure}
+
+\section{まとめと今後の展望}
+シングルピンホールを用いた3次元画像のモンテカルロシミュレーションを行うことができた．今回は媒質を$H_2O$とした球画像でシミュレーションを行ったが，今後はSheppファントムを用いて複数媒質でシミュレーションを行う．その後，マルチピンホールでモンテカルロシミュレーションを行う．
+
+\end{document}

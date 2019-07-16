@@ -39,7 +39,11 @@ int main()
 	cond.img_h = 128;
 	cond.detector_num = 20;
 	cond.detector_size = 128;
+<<<<<<< HEAD
 	cond.update_count = 400;
+=======
+	cond.update_count = 100;
+>>>>>>> origin/master
 	cond.distance_img_bottom_to_detector = 10;
 	cond.text_name = "condition.txt";
 	/*---- 使ってない ----*/
@@ -108,36 +112,47 @@ void RegurarizationWithTV(std::vector<float> &proj_img, std::vector<float> &bpro
 	{
 		std::cout << update_count + 1 << " times processing..." << std::endl;
 		std::vector<float> bproj_img_with_tv(bproj_img.size(), 0.);
+<<<<<<< HEAD
 		for(int i = 0; i < mlem_count; i++) {	mlem(bproj_img, proj_img, bproj_img_with_tv, cond); }
+=======
+		for(int i = 0; i < 50; i++) {	mlem(bproj_img, proj_img, bproj_img_with_tv, cond); }
+>>>>>>> origin/master
 
 		for(int i = 0; i < bproj_img_with_tv.size(); i++) { if(bproj_img_with_tv[i] < 0.) { bproj_img_with_tv[i] = 0.; }}
 
 		std::vector<float> v(bproj_img.size(), 0.);
+<<<<<<< HEAD
 		for(int i = 0; i < tv_count; i++)
 		{
 			computeTVgradient(bproj_img_with_tv, v, cond);
 			float a = 0.2;
 			for(int i = 0; i < bproj_img.size(); i++) { bproj_img_with_tv[i] -= a * v[i]; }
 		}
+=======
+		computeTVgradient(bproj_img_with_tv, v, cond);
+		float a = 0.08;
+		for(int i = 0; i < bproj_img.size(); i++) { bproj_img_with_tv[i] -= a * v[i]; }
+
+>>>>>>> origin/master
 		for(int i = 0; i < bproj_img_with_tv.size(); i++) { if(bproj_img_with_tv[i] < 0.) { bproj_img_with_tv[i] = 0.; }}
 
 		bproj_img = bproj_img_with_tv;
 
 
 		/*---- 全部の回数保存する場合 ----*/
-		// std::string write_file_name;
-		// ostr << "result/with_tv" <<  update_count + 1 << "_float_" << cond.img_w << "-" << cond.img_h << ".raw";
-		// write_file_name = ostr.str();
-		// ostr.str("");
-		// writeRawFile(write_file_name, bproj_img);
+		std::string write_file_name;
+		ostr << "result/with_tv" <<  update_count + 1 << "_float_" << cond.img_w << "-" << cond.img_h << ".raw";
+		write_file_name = ostr.str();
+		ostr.str("");
+		if( (update_count + 1) % 10 == 0 ) { writeRawFile(write_file_name, bproj_img); }
 		/*-----------------------------*/
 	}
 	/*---- 全部の回数保存する場合 ----*/
-	std::string write_file_name;
-	ostr << "result/with_tv" <<  cond.update_count << "_float_" << cond.img_w << "-" << cond.img_h << ".raw";
-	write_file_name = ostr.str();
-	ostr.str("");
-	writeRawFile(write_file_name, bproj_img);
+	// std::string write_file_name;
+	// ostr << "result/with_tv" <<  cond.update_count << "_float_" << cond.img_w << "-" << cond.img_h << ".raw";
+	// write_file_name = ostr.str();
+	// ostr.str("");
+	// writeRawFile(write_file_name, bproj_img);
 	/*-----------------------------*/
 }
 

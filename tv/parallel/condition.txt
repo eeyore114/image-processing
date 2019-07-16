@@ -2,8 +2,16 @@ img_w = 128
 img_h = 128
 detector_num = 20
 detector_size = 128
+<<<<<<< HEAD
 update_count = 400
 distance_img_bottom_to_detector = 10
 time = 41.432[s]
      = 0.690534[min]
      = 0.0115089[h]
+=======
+update_count = 100
+distance_img_bottom_to_detector = 10
+time = 654.19[s]
+     = 10.9032[min]
+     = 0.181719[h]
+>>>>>>> origin/master
