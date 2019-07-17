@@ -30,9 +30,7 @@ typedef struct {
 	float photon_num;
 } Condition;
 
-bool JudgeIsair(Eigen::Vector3f curr_, float* absorp_map, float img_pixel_size, int img_w, int img_h, int img_d);
 float RandGenerator(curandState* state_gpu);
-void readXcom(thrust::host_vector<float>& Coherent_ca, thrust::host_vector<float>& Compton_ca, thrust::host_vector<float>& Photoelectric_ca, thrust::host_vector<float>& mu_ca, thrust::host_vector<float>& Coherent_h2o, thrust::host_vector<float>& Compton_h2o, thrust::host_vector<float>& Photoelectric_h2o, thrust::host_vector<float>& mu_h2o);
 void WriteImage(thrust::host_vector<float> &detector, Condition cond);
 void WriteImage(thrust::host_vector<float> &detector, Condition cond, std::string directory);
 void outputLog(Condition cond);
