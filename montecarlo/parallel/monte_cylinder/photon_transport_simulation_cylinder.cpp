@@ -42,7 +42,7 @@ int photon_num = 100000000;
 //2 : h2o
 //3 : multi(ca & h2o)
 // -------------------
-int medium_num = 3;
+int medium_num = 2;
 
 
 float Coherent_ca[201];

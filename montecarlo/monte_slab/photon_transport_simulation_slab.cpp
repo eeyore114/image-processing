@@ -404,8 +404,8 @@ void RaySimulation(double* energy_count,double* detecter, float* slab)
 					// コヒーレント効果
 					else
 					{
-						if(p.scatter_ == 0) { break; }
-						// p.scatter_++;
+						// if(p.scatter_ == 0) { break; }
+						p.scatter_++;
 					}
 
 					// 散乱回数が5回より大きい＆エネルギーが30より小さい（制限範囲内）

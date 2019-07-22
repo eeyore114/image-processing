@@ -1,431 +1,204 @@
 /*
+
+floatにしてある
+genrand_real1() //一様実乱数[0,1] (32ビット精度)
+genrand_real2() //一様実乱数[0,1) (32ビット精度)
+genrand_real3() //一様実乱数(0,1) (32ビット精度)
+
 コンパイルオプションとして
 -std=c++11
 これを必ずつける（これないとエラーがでる）
 */
 
-
-#include <iostream>
 #include <stdio.h>
+#include <iostream>
 #include <stdlib.h>
 #include <math.h>
-#include <time.h>
-#include <iomanip>
 #include <sstream>
 #include <sys/stat.h>
-#include <vector>
-#include "fileio.h"
 #include "./Eigen/Core"
 #include "./Eigen/Dense"
 #include "./Eigen/Geometry"
+#include "fileio.h"
+#include "Mersenne_twister.h"
+#include "Mersenne_twister.cpp"
+#define DEBUG
 
 typedef struct {
-	int img_w;
-	int img_h;
-	int img_d;
-	int detector_num;
 	int detector_size_w;
 	int detector_size_h;
-	int pinhole_count;
-	int update_count;
+	float img_pixel_size;
 	float rotation_radius;
 	float distance_collimator_to_detector;
 	float height_collimator;
-	float collimator_width;
-	float collimator_height;
-	float img_pixel_size;
-	float detector_pixel_size_w;
-	float detector_pixel_size_h;
-	float collimator_interval;
-	float collimator_theta;
+	float width_collimator;
+	float d_width;
+	float d_height;
 	float time;
+	float photon_num;
 } Condition;
 
-void launchMLEM(std::vector<float> &detector, std::vector<float> &reconstruct_img,  Condition cond);
-Eigen::Vector3f calculate_unit_vector(Eigen::Vector3f past, Eigen::Vector3f curr);
-void create_fov(std::vector<int> &fov, std::vector<float> &pinhole_x, std::vector<float> &pinhole_z, Condition cond);
-void launchProjection(std::vector<float> &init_img, std::vector<float> &detector, Condition cond);
-void launchBackProjection(std::vector<float> &detector, std::vector<float> &reconstruct_img, Condition cond);
-void Projection(std::vector<float> &f, std::vector<float> &g, std::vector<int> &fov,  std::vector<float> &pinhole_x, std::vector<float> &pinhole_z, Condition cond, bool is_inverse = false);
+void launch_test_gradient_pinhole(std::vector<float> &detector, std::vector<float> pinhole_theta_xy, std::vector<float> pinhole_theta_yz, Condition cond);
+void detect_photon(class Photon p, std::vector<float> &detector, Condition cond);
+bool passPinhole(class Photon p, std::vector<float> pinhole_theta_xy, std::vector<float> pinhole_theta_yz, Condition cond);
 
-void mlem(std::vector<float> &f, std::vector<float> &g, std::vector<float> &h,  Condition cond);
-void outputLogInit(Condition cond, std::string &date_directory);
-void outputLogLast(Condition cond, std::string date_directory, std::vector<float> &result);
-void WriteImage(std::vector<float> &detector, Condition cond, std::string directory);
-std::string makeLogDirectory();
-std::string showCurrentTime();
+class Photon {
+public:
+	Eigen::Vector3f curr_;
+	Eigen::Vector3f past_;
+	float theta_;
+	float phi_;
+	Photon();
+	void move();
+};
 
+Photon::Photon()
+{
+	float rnd = 1. * 2 * (genrand_real1() - 0.5f);
+	theta_ = acos(rnd);
+	phi_ = genrand_real1() * 2 * M_PI;
+
+	past_ << 0., 0., 0.;
+	curr_ << 0., 0., 0.;
+}
+
+void Photon::move()
+{
+	float optical_length_ = genrand_real3();
+
+	curr_(0) = past_(0) + optical_length_ * sin(theta_) * cos(phi_);
+	curr_(1) = past_(1) + optical_length_ * sin(theta_) * sin(phi_);
+	curr_(2) = past_(2) + optical_length_ * cos(theta_);
+
+	if(isnan(curr_.array()).any())
+	{
+		printf("nan\n\n");
+	}
+}
 
 int main()
 {
+
+
+
+
+
 	Condition cond;
-	cond.img_w = 128;
-	cond.img_h = 128;
-	cond.img_d = 128;
-	cond.detector_num = 180;
 	cond.detector_size_w = 512;
 	cond.detector_size_h = 256;
-	cond.rotation_radius = 25;
-	cond.pinhole_count = 8;
+	cond.rotation_radius = 13;
 	cond.distance_collimator_to_detector = 7.5;
-	cond.collimator_width = 0.2;
-	cond.collimator_height = 0.2;
+	cond.height_collimator = 1.;
+	cond.width_collimator = 5;
 	cond.img_pixel_size = 0.2;
-	cond.detector_pixel_size_w = 0.08;
-	cond.detector_pixel_size_h = 0.08;
-	cond.collimator_interval = 9.;
-	cond.collimator_theta = M_PI / 6.;
-	cond.update_count = 10;
+	cond.d_width = 0.08;
+	cond.d_height = 0.08;
+	cond.photon_num = 1000000;
+	std::vector<float> pinhole_theta_xy{ 40.};
+	std::vector<float> pinhole_theta_yz{ 20. };
 
-	clock_t start = clock();
-	std::string date_directory;
-	outputLogInit(cond, date_directory);
+	/*---- 時間計測開始&条件表示 start ----*/
 
-	std::vector<float> init_img(cond.img_w * cond.img_h * cond.img_d, 0.);
-	readRawFile("./read_img/Shepp_float_128-128-128.raw", init_img);
-	std::vector<float> detector(cond.detector_size_w * cond.detector_size_h * cond.detector_num, 0.);
-	launchProjection(init_img, detector, cond);
-	std::vector<float> reconstruct_img(init_img.size(), 0.);
-	launchMLEM(detector, reconstruct_img, cond);
+	/*---- 時間計測開始&条件表示  end -----*/
 
+	// 変数の定義
+	std::vector<float> detector(cond.detector_size_w * cond.detector_size_h, 0.);
 
-	clock_t end = clock();
+	// 関数呼び出し
+	launch_test_gradient_pinhole(detector, pinhole_theta_xy, pinhole_theta_yz, cond);
 
-  cond.time = static_cast<double>(end - start) / CLOCKS_PER_SEC;
-	outputLogLast(cond, date_directory, reconstruct_img);
+	/*----- 時間計測処理 start-----*/
 
-  std::cout << "time = " << cond.time << "[s]\n"
-  					 <<	"     = " << cond.time / 60 << "[min]\n"
-  					 << "     = " << cond.time / 3600 << "[h]" << std::endl;
+	/*----- 時間計測処理 end-------*/
 }
 
 
-void launchMLEM(std::vector<float> &detector, std::vector<float> &reconstruct_img,  Condition cond)
+void launch_test_gradient_pinhole(std::vector<float> &detector, std::vector<float> pinhole_theta_xy, std::vector<float> pinhole_theta_yz, Condition cond)
 {
-	std::vector<float> init_img(reconstruct_img.size(), 1.);
-
-	std::ostringstream ostr;
-
-	for(int i = 0; i < cond.update_count; i++)
+	for(int i = 0; i < cond.photon_num; i++)
 	{
-		std::cout << i + 1 << " times processing..." << std::endl;
-		mlem(init_img, detector, reconstruct_img, cond);
+		Photon p;
+		p.move();
 
-		/*---- 全部の回数保存する場合 ----*/
-		std::string write_file_name;
-		ostr << "result/ML-EM" <<  i + 1 << "_float_" << cond.img_w <<  "-" << cond.img_h << "-" << cond.img_d <<  ".raw";
-		write_file_name = ostr.str();
-		ostr.str("");
-		if(true/*(i + 1) % 10 == 0*/) { writeRawFile(write_file_name, reconstruct_img); }
-		/*-----------------------------*/
+		bool pass_pinhole = passPinhole(p, pinhole_theta_xy, pinhole_theta_yz, cond);
+
+		if(!pass_pinhole) continue;
+		#ifdef DEBUG
+ 		printf("detect!\n");
+		#endif // DEBUG //
+
+
+		detect_photon(p, detector, cond);
 	}
 
-	/*---- 最後だけ保存する場合 ----*/
-	// std::string last;
-	// ostr << "result/ML-EM" <<  cond.update_count << "_float_" << cond.img_w <<  "-" << cond.img_h <<  ".raw";
-	// last = ostr.str();
-	// writeRawFile(last, reconstruct_img);
-	/*---------------------------*/
+	writeRawFile("./result/detector_float_512-256.raw", detector);
 }
 
-void mlem(std::vector<float> &f, std::vector<float> &g, std::vector<float> &h,  Condition cond)
+bool passPinhole(class Photon p, std::vector<float> pinhole_theta_xy, std::vector<float> pinhole_theta_yz, Condition cond)
 {
-	std::vector<float> cij_proj(g.size(), 0.);
-	std::vector<float> cij(f.size(), 0.);
-	std::vector<float> f_proj(g.size(), 0.);
-	std::vector<float> ratio_gf(g.size(), 0.);
-	std::vector<float> ratio_gf_bproj(f.size(), 0.);
+	// l1の通過判定
+	// l3の通過判定
+	// l2の通過判定
 
-	for(int i = 0; i < cij_proj.size(); i++) { cij_proj[i] = 1.; }
-	launchBackProjection(cij_proj, cij, cond);
-	// writeRawFile("./result/cij_float_128-128.raw", cij);
+	Eigen::Vector3f past_rot, curr_rot, axis, pinhole_center;
+  Eigen::Matrix3f rot_xy, rot_zx;
 
-	launchProjection(f, f_proj, cond);
-	// writeRawFile("./result/f_proj_float_512-180.raw", f_proj);
+	pinhole_center << 0., - (cond.rotation_radius + cond.height_collimator / 2.), 0.;
 
-	for(int i = 0; i < g.size(); i++) { ratio_gf[i] =  (g[i] < 0.0001 || f_proj[i] < 0.0001) ? 0 : g[i] / f_proj[i]; }
+	/* x軸正方向からy軸正方向に向けての回転を正として回転 */
+	axis << 0, 0, 1;
+  rot_xy = Eigen::AngleAxisf( - pinhole_theta_xy[0] * M_PI / 180., axis );
 
-	launchBackProjection(ratio_gf, ratio_gf_bproj, cond);
-	// writeRawFile("./result/ratio_gf_float_512-180.raw", ratio_gf);
+	/* z軸正方向からy軸正方向に向けての回転を正として回転 */
+  axis << 1, 0, 0;
+  rot_zx = Eigen::AngleAxisf( pinhole_theta_yz[0] * M_PI / 180., axis );
 
-	// この下二つfor文使わないでかける？？
-	for(int i = 0; i < h.size(); i++) { h[i] = (ratio_gf_bproj[i] * f[i])  / cij[i]; }
+	past_rot = rot_zx * rot_xy * (p.past_ - pinhole_center) + pinhole_center;
+	curr_rot = rot_zx * rot_xy * (p.curr_ - pinhole_center) + pinhole_center;
 
-	for(int i = 0; i < h.size(); i++) { f[i] = h[i]; }
+	Eigen::Vector3f on_collimator;
+	on_collimator(1) = - (cond.rotation_radius + cond.height_collimator / 2.);
+	float t = (on_collimator(1) - past_rot(1)) / (curr_rot(1) - past_rot(1));
+	on_collimator(0) = past_rot(0) + t * (curr_rot(0) - past_rot(0));
+	on_collimator(2) = past_rot(2) + t * (curr_rot(2) - past_rot(2));
+
+	bool is_in_pinhole = pow(on_collimator(0), 2.) + pow(on_collimator(2), 2.) < pow(cond.width_collimator / 2., 2.);
+	if (!is_in_pinhole)
+  {
+    #ifdef DEBUG
+    // std::cout << "not detect!" << std::endl;
+    #endif // DEBUG //
+		return false;
+  }
+
+	return true;
 }
 
-
-void launchProjection(std::vector<float> &init_img, std::vector<float> &detector, Condition cond)
+void detect_photon(class Photon p, std::vector<float> &detector, Condition cond)
 {
-	std::vector<float> pinhole_x{ -15., 0., 15., -7.5, 7.5, -15.,  0., 15. };
-	std::vector<float> pinhole_z{ 	 5., 5.,  5.,  0., 0.,  -5., -5., -5. };
+	// 検出処理
+	Eigen::Vector3f on_detector;
+	on_detector(1) = - (cond.rotation_radius + cond.distance_collimator_to_detector);
+	float t = (on_detector(1) - p.past_(1)) / (p.curr_(1) - p.past_(1));
+	on_detector(0) = p.past_(0) + t * (p.curr_(0) - p.past_(0));
+	on_detector(2) = p.past_(2) + t * (p.curr_(2) - p.past_(2));
 
-	// fov求める
-	std::vector<int> fov(cond.detector_size_w * cond.detector_size_h, -1);
-	create_fov(fov, pinhole_x, pinhole_z, cond);
-	std::vector<float> fov_float(cond.detector_size_w * cond.detector_size_h);
-	for(int i = 0; i < fov.size(); i++) { fov_float[i] = fov[i];}
+	int i = cond.detector_size_h / 2. -  ceilf(on_detector(2) / cond.d_height);
+  int j = cond.detector_size_w / 2. + floorf(on_detector(0) / cond.d_width);
 
-	// writeRawFile("./result/fov_float_512-256.raw", fov_float);
+	#ifdef DEBUG
 
+	std::cout << " ------------- " << std::endl;
+	std::cout << "p.past_ = " << p.past_ << std::endl;
+	std::cout << "p.curr_ = " << p.curr_ << std::endl;
+	std::cout << "p.theta_ = " << p.theta_ << std::endl;
+	std::cout << "p.phi_ = " << p.phi_ << std::endl;
+	std::cout << "i = " << i << ", j = " << j << std::endl;
+	std::cout << " ------------- " << std::endl;
 
-	// 投影
-	Projection(init_img, detector, fov, pinhole_x, pinhole_z, cond);
+	#endif // DEBUG //
 
-	// 画像書き込み
-	// writeRawFile("./result/detector_float_512-256-180.raw", detector);
-}
+	if ( 0 > i || i > cond.detector_size_h || 0 > j || j > cond.detector_size_w ) return;
 
-void launchBackProjection(std::vector<float> &detector, std::vector<float> &reconstruct_img, Condition cond)
-{
-	std::vector<float> pinhole_x{ -15., 0., 15., -7.5, 7.5, -15.,  0., 15. };
-	std::vector<float> pinhole_z{ 	 5., 5.,  5.,  0., 0.,  -5., -5., -5. };
-
-	// fov求める
-	std::vector<int> fov(cond.detector_size_w * cond.detector_size_h, -1);
-	create_fov(fov, pinhole_x, pinhole_z, cond);
-
-	// 投影
-	bool is_inverse = true;
-	Projection(detector, reconstruct_img, fov, pinhole_x, pinhole_z, cond, is_inverse);
-
-	// 画像書き込み
-	writeRawFile("./result/backproj_float_128-128-128.raw", reconstruct_img);
-}
-
-void Projection(std::vector<float> &f, std::vector<float> &g, std::vector<int> &fov,  std::vector<float> &pinhole_x, std::vector<float> &pinhole_z, Condition cond, bool is_inverse)
-{
-	int delta_detector = 360 / cond.detector_num;
-	for(int theta_degree = 0; theta_degree < 360; theta_degree += delta_detector)
-	{
-		const float theta = theta_degree * M_PI / 180.0f;
-		for(int m = 0; m < cond.detector_size_h; m++)
-		{
-			for(int n = 0; n < cond.detector_size_w; n++)
-			{
-
-				if(fov[m * cond.detector_size_w + n] == -1) { continue; }
-				for(int pinhole_num = 0; pinhole_num < cond.pinhole_count; pinhole_num++)
-				{
-					if(fov[m * cond.detector_size_w + n] != pinhole_num) { continue; }
-					float collimator_x = pinhole_x[fov[m * cond.detector_size_w + n]];
-					float collimator_y = - cond.rotation_radius;
-					float collimator_z = pinhole_z[pinhole_num];
-					Eigen::Vector3f on_collimator;
-					on_collimator(0) = collimator_x * cosf(-theta) - collimator_y * sinf(-theta);
-					on_collimator(1) = collimator_x * sinf(-theta) + collimator_y * cosf(-theta);
-					on_collimator(2) = collimator_z;
-
-					float detector_x = (- (cond.detector_size_w - 1.) / 2. + n) * cond.detector_pixel_size_w;
-					float detector_y = -1. * (cond.rotation_radius + cond.distance_collimator_to_detector);
-
-					Eigen::Vector3f on_detector;
-					on_detector(0) = detector_x * cosf(-theta) - detector_y * sinf(-theta);
-					on_detector(1) = detector_x * sinf(-theta) + detector_y * cosf(-theta);
-					on_detector(2) = ((cond.detector_size_h - 1.) / 2. - m) * cond.detector_pixel_size_h;
-
-					Eigen::Vector3f d = calculate_unit_vector(on_detector, on_collimator);
-					Eigen::Vector3f sp = on_detector / cond.img_pixel_size;
-
-					for (int sample_point = 0; sample_point < 300; sample_point++)
-					{
-						if(-(cond.img_w - 1.0f) / 2.0f >sp(0) || sp(0) >(cond.img_w - 1.0f) / 2.0f ||
-						   -(cond.img_h - 1.0f) / 2.0f >sp(1) || sp(1) >(cond.img_h - 1.0f) / 2.0f ||
-						   -(cond.img_d - 1.0f) / 2.0f >sp(2) || sp(2) >(cond.img_d - 1.0f) / 2.0f )
-						{ sp += d; continue; }
-
-						//双線形補完を行う左上の画素の座標(x0,y0)
-						float x0 = floor(sp(0) - 0.5) + 0.5;
-						float y0 = ceil(sp(1) - 0.5) + 0.5;
-						float z0 = ceil(sp(2) - 0.5) + 0.5;
-
-						//i,jに戻す
-						float J = x0 + (cond.img_w - 1.0)/2.0;
-						float I = (cond.img_h - 1.0)/2.0 - y0;
-						float D = (cond.img_d - 1.0f) / 2.0f - z0;
-						if(I + 1 == cond.img_h || J + 1 == cond.img_w || D + 1 == cond.img_d) { continue; }
-						//indexは配列の番号
-						int index1 = cond.img_w * cond.img_h * D + cond.img_w * I + J;
-						int index2 = cond.img_w * cond.img_h * D + cond.img_w * I + (J + 1);
-						int index3 = cond.img_w * cond.img_h * D + cond.img_w * (I + 1) + J;
-						int index4 = cond.img_w * cond.img_h * D + cond.img_w * (I + 1) + (J + 1);
-						int index5 = cond.img_w * cond.img_h * (D + 1) + cond.img_w * I + J;
-						int index6 = cond.img_w * cond.img_h * (D + 1) + cond.img_w * I + (J + 1);
-						int index7 = cond.img_w * cond.img_h * (D + 1) + cond.img_w * (I + 1) + J;
-						int index8 = cond.img_w * cond.img_h * (D + 1) + cond.img_w * (I + 1) + (J + 1);
-
-						float dx = fabs(sp(0) - x0);
-						float dy = fabs(sp(1) - y0);
-						float dz = fabs(sp(2) - z0);
-
-						float V1 = dx * dy * dz;
-						float V2 = (1.0f - dx) * dy * dz;
-						float V3 = dx * (1.0f - dy) * dz;
-						float V4 = (1.0f - dx) * (1.0f - dy) * dz;
-						float V5 = dx * dy * (1.0f - dz);
-						float V6 = (1.0f - dx) * dy * (1.0f - dz);
-						float V7 = dx * (1.0f - dy) * (1.0f - dz);
-						float V8 = (1.0f - dx) * (1.0f - dy) * (1.0f - dz);
-
-						if(is_inverse)
-						{
-							int f_index = cond.detector_size_w * cond.detector_size_h * (theta_degree / delta_detector) + cond.detector_size_w * m + n;
-
-							g[index1] += f[f_index] * V8;
-							g[index2] += f[f_index] * V7;
-							g[index3] += f[f_index] * V6;
-							g[index4] += f[f_index] * V5;
-							g[index5] += f[f_index] * V4;
-							g[index6] += f[f_index] * V3;
-							g[index7] += f[f_index] * V2;
-							g[index8] += f[f_index] * V1;
-						}
-						else
-						{
-							float val = f[index1] * V8 + f[index2] * V7 + f[index3] * V6 + f[index4] * V5 + f[index5] * V4 + f[index6] * V3 + f[index7] * V2 + f[index8] * V1;
-
-							g[cond.detector_size_w * cond.detector_size_h * (theta_degree / delta_detector) + cond.detector_size_w * m + n] += val;
-						}
-						sp += d;
-					}
-				}
-			}
-		}
-	}
-}
-
-void create_fov(std::vector<int> &fov, std::vector<float> &pinhole_x, std::vector<float> &pinhole_z, Condition cond)
-{
-
-	float fov_radius = abs(cond.distance_collimator_to_detector * tan(cond.collimator_theta));
-	float y = - (cond.rotation_radius + cond.distance_collimator_to_detector);
-
-	for(int pinhole_num = 0; pinhole_num < cond.pinhole_count; pinhole_num++)
-	{
-		Eigen::Vector3f on_collimator;
-		on_collimator << pinhole_x[pinhole_num], - cond.rotation_radius, pinhole_z[pinhole_num];
-		Eigen::Vector3f on_detector;
-		on_detector << pinhole_x[pinhole_num], y, pinhole_z[pinhole_num];
-		Eigen::Vector3f base = calculate_unit_vector(on_collimator, on_detector);
-		Eigen::Vector3f max_vec;
-		// zコメントアウトしたら半径ちゃんとした大きさになった（ベクトルあんまりわかってない）
-		max_vec << fov_radius + pinhole_x[pinhole_num], y, /*fov_radius + */pinhole_z[pinhole_num];
-		Eigen::Vector3f max = calculate_unit_vector(on_collimator, max_vec);
-
-		for(int i = 0; i < cond.detector_size_h; i++)
-		{
-			for(int j = 0; j < cond.detector_size_w; j++)
-			{
-				Eigen::Vector3f vec;
-				float x = (- (cond.detector_size_w - 1.0) / 2.0 + j) * cond.detector_pixel_size_w;
-				float z = ((cond.detector_size_h - 1.0) / 2.0 - i) * cond.detector_pixel_size_h;
-				vec << x, y, z;
-				vec = calculate_unit_vector(on_collimator, vec);
-				if(max.dot(base) > vec.dot(base)) { continue; }
-				fov[i * cond.detector_size_w + j] = pinhole_num;
-			}
-		}
-	}
-}
-
-Eigen::Vector3f calculate_unit_vector(Eigen::Vector3f past, Eigen::Vector3f curr)
-{
-	Eigen::Vector3f d = curr - past;
-	float d_norm = d.norm();
-	d /= d_norm;
-	return d;
-}
-
-
-void outputLogInit(Condition cond, std::string &date_directory)
-{
-	std::ostringstream ostr;
-	ostr << "--------------- condition ---------------\n"
-			 << "date : " << showCurrentTime() << "\n\n"
-			 << "img_w = " << cond.img_w << "\n"
-			 << "img_h = " << cond.img_h << "\n"
-			 << "img_d = " << cond.img_d << "\n"
-			 << "detector_num = " << cond.detector_num << "\n"
-			 << "detector_size_w = " << cond.detector_size_w << "\n"
-			 << "detector_size_h = " << cond.detector_size_h << "\n"
-			 << "rotation_radius = " << cond.rotation_radius << "\n"
-			 << "distance_collimator_to_detector = " << cond.distance_collimator_to_detector << "\n"
-			 << "collimator_width = " << cond.collimator_width << "\n"
-			 << "detector_pixel_size_w = " << cond.detector_pixel_size_w << "\n"
-			 << "detector_pixel_size_h = " << cond.detector_pixel_size_h << "\n"
-			 << "img_pixel_size = " << cond.img_pixel_size << "\n"
-			 << "pinhole_count = " << cond.pinhole_count << "\n"
-			 << "collimator_interval = " << cond.collimator_interval << "\n"
-			 << "collimator_theta = " << cond.collimator_theta << "\n"
-			 << "update_count = " << cond.update_count << "\n"
-			 << "-----------------------------------------\n\n";
-
-	std::string str = ostr.str();
-	std::cout << str << std::endl;
-
- 	date_directory = makeLogDirectory();
- 	std::string log_text = date_directory + "log.txt";
- 	std::ofstream outputfile(log_text.c_str());
- 	outputfile << str;
- 	outputfile.close();
-}
-
-void outputLogLast(Condition cond, std::string date_directory, std::vector<float> &result)
-{
-	std::ostringstream ostr;
-	ostr << "\ntime = " << cond.time << "[s]\n"
-			 << "     = " << cond.time / 60 << "[min]\n"
-			 << "     = " << cond.time / 3600 << "[h]\n";
-
-	std::string str = ostr.str();
-	std::string log_text = date_directory + "log.txt";
-	std::ofstream outputfile(log_text.c_str(), std::ios::app);
-	outputfile << str;
-	outputfile.close();
-
-	WriteImage(result, cond, date_directory);
-}
-
-std::string showCurrentTime()
-{
-    time_t timer;
-    struct tm *date;
-    char str[256];
-
-    timer = time(NULL);          /* 経過時間を取得 */
-    date = localtime(&timer);    /* 経過時間を時間を表す構造体 date に変換 */
-
-    strftime(str, 255, "%Y %B %d %A %H:%M:%S", date);
-    std::string s = str;
-    return s;
-}
-
-std::string makeLogDirectory()
-{
-    time_t timer;
-    struct tm *date;
-    char str[256];
-
-    timer = time(NULL);          /* 経過時間を取得 */
-    date = localtime(&timer);    /* 経過時間を時間を表す構造体 date に変換 */
-
-    strftime(str, 255, "%Y_%m_%d_%H.%M.%S/", date);
-    std::string s = str;
-		s = "log/" + s;
-
-		mkdir("log/", 0777);
-		mkdir(s.c_str(), 0777);
-		return s;
-}
-
-
-void WriteImage(std::vector<float> &result, Condition cond, std::string directory)
-{
-	std::ostringstream ostr;
-
-	std::string result_name;
-	ostr << directory << "ML-EM" <<  cond.update_count << "_float_" << cond.img_w <<  "-" << cond.img_h << ".raw";
-	result_name = ostr.str();
-	ostr.str("");
-	writeRawFile(result_name, result);
+	detector[cond.detector_size_w * i + j] = 1.;
 }
