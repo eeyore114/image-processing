@@ -47,7 +47,6 @@ Eigen::Vector3f calc_cross_point(Eigen::Vector3f left_start, Eigen::Vector3f lef
 
 void test()
 {
-
 	Eigen::Vector3f left_start, left_end, right_start, right_end;
 	float z = 5.;
 	left_start << -2., -1, z;
