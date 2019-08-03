@@ -11,6 +11,7 @@ genrand_real3() //一様実乱数(0,1) (32ビット精度)
 */
 
 #include <stdio.h>
+#include <unistd.h>
 #include <iostream>
 #include <stdlib.h>
 #include <math.h>
@@ -29,7 +30,10 @@ enum Coordinate { X, Y, Z, coord_num };
 typedef struct {
 	int detector_size_w;
 	int detector_size_h;
+	int pinhole_img_w;
+	int pinhole_img_h;
 	float img_pixel_size;
+	float pinhole_img_pixel_size;
 	float rotation_radius;
 	float distance_collimator_to_detector;
 	float height_collimator;
@@ -38,85 +42,79 @@ typedef struct {
 	float d_height;
 	float time;
 	float photon_num;
+	float aperture_degree;
 } Condition;
 
-void launch_test_gradient_pinhole(std::vector<float> &detector, std::vector<float> pinhole_theta_xy, std::vector<float> pinhole_theta_yz, std::vector<float> pinhole_center, Condition cond);
-void detect_photon(class Photon p, std::vector<float> &detector, Condition cond);
-bool passPinhole(class Photon p, float pinhole_theta_xy, float pinhole_theta_yz, Eigen::Vector3f pinhole_center, Condition cond);
+void create_fov(std::vector<int> &fov, Condition cond, Eigen::Vector3f pinhole_center, float pinhole_theta_xy, float pinhole_theta_yz, int pinhole_num);
+void create_pinhole_img(std::vector<int> &img, Condition cond, Eigen::Vector3f pinhole_center, float pinhole_theta_xy, float pinhole_theta_yz, int pinhole_num, int option);
+void set_pinhole_img(std::vector<int> &pinhole_img_layer1, std::vector<int> &pinhole_img_layer3, std::vector<int> &fov, Condition cond, std::vector<float> pinhole_center, std::vector<float> pinhole_theta_xy, std::vector<float> pinhole_theta_yz);
+void create_fov(std::vector<int> &fov, Condition cond, Eigen::Vector3f pinhole_center, float pinhole_theta_xy, float pinhole_theta_yz, int pinhole_num);
+void create_pinhole_img_layer1(std::vector<int> &pinhole_img, Condition cond, Eigen::Vector3f pinhole_center, float pinhole_theta_xy, float pinhole_theta_yz, int pinhole_num);
+void create_pinhole_img_layer3(std::vector<int> &pinhole_img, Condition cond, Eigen::Vector3f pinhole_center, float pinhole_theta_xy, float pinhole_theta_yz, int pinhole_num);
 
-class Photon {
-public:
-	Eigen::Vector3f curr_;
-	Eigen::Vector3f past_;
-	float theta_;
-	float phi_;
-	Photon();
-	void move();
-};
-
-Photon::Photon()
-{
-	float rnd = 1. * 2 * (genrand_real1() - 0.5f);
-	theta_ = acos(rnd);
-	phi_ = genrand_real1() * 2 * M_PI;
-
-	past_ << 0., 0., 0.;
-	curr_ << 0., 0., 0.;
-}
-
-void Photon::move()
-{
-	float optical_length_ = genrand_real3();
-
-	curr_(0) = past_(0) + optical_length_ * sin(theta_) * cos(phi_);
-	curr_(1) = past_(1) + optical_length_ * sin(theta_) * sin(phi_);
-	curr_(2) = past_(2) + optical_length_ * cos(theta_);
-
-	if(isnan(curr_.array()).any())
-	{
-		printf("nan\n\n");
-	}
-}
 
 int main()
 {
 	Condition cond;
 	cond.detector_size_w = 512;
 	cond.detector_size_h = 256;
+	cond.pinhole_img_w = 1024 * 2;
+	cond.pinhole_img_h = 512 * 2;
 	cond.rotation_radius = 13;
-	cond.distance_collimator_to_detector = 7.5;
+	cond.distance_collimator_to_detector = 7.6;
 	cond.height_collimator = 1.;
-	cond.width_collimator = 5;
+	cond.width_collimator = 0.5;
 	cond.img_pixel_size = 0.2;
+	// cond.pinhole_img_pixel_size = 0.08 / 4;
+	cond.pinhole_img_pixel_size = 0.04 / 2;
 	cond.d_width = 0.08;
 	cond.d_height = 0.08;
 	cond.photon_num = 10000000;
-	std::vector<float> pinhole_theta_xy{ -24., -15., 15., 24., -9., 0., 9., -24., -15., 15., 24. };
-	std::vector<float> pinhole_theta_yz{ 	 9.,   9.,  9.,  9.,  0., 0., 0., - 9., - 9., -9., -9. };
-	float pc_y = - (cond.rotation_radius + cond.height_collimator / 2.);
+	cond.aperture_degree = 24.;
+	std::vector<float> pinhole_theta_xy{ -24., -7., 7., 24., -15., 0., 15., -24., -7., 7., 24. };
+	// std::vector<float> pinhole_theta_xy(11, 0.);
+	std::vector<float> pinhole_theta_yz{ 	-9.5f,  -10.5f, -10.5f, -9.5f, 0., 0., 0., 9.5f,  10.5f, 10.5f, 9.5f };
+	// std::vector<float> pinhole_theta_yz(11, 0.);
+	float pc_y = - (cond.rotation_radius);
 	std::vector<float> pinhole_center
-	{ -10., pc_y,  4.2f,
-		- 3., pc_y,  4.2f,
-		  3., pc_y,  4.2f,
-		 10., pc_y,  4.2f,
-		-6.2f, pc_y,  0.,
+	// { -10., pc_y,  4.2f,
+	// 	- 3., pc_y,  4.2f,
+	// 	  3., pc_y,  4.2f,
+	// 	 10., pc_y,  4.2f,
+	// 	-6.2f, pc_y,  0.,
+	// 	  0., pc_y,  0.,
+	// 	 6.2f, pc_y,  0.,
+	// 	-10., pc_y, -4.2f,
+ 	// 	- 3., pc_y, -4.2f,
+ 	// 	  3., pc_y, -4.2f,
+ 	// 	 10., pc_y, -4.2f
+	// 									};
+	{ -11., pc_y,  4.,
+		- 3., pc_y,  4.5f,
+		  3., pc_y,  4.5f,
+		 11., pc_y,  4.,
+		-6.5f, pc_y,  0.,
 		  0., pc_y,  0.,
-		 6.2f, pc_y,  0.,
-		-10., pc_y, -4.2f,
- 		- 3., pc_y, -4.2f,
- 		  3., pc_y, -4.2f,
- 		 10., pc_y, -4.2f,
+		 6.5f, pc_y,  0.,
+		-11., pc_y, -4.,
+ 		- 3., pc_y, -4.5f,
+ 		  3., pc_y, -4.5f,
+ 		 11., pc_y, -4.
 										};
 
 	/*---- 時間計測開始&条件表示 start ----*/
 
 	/*---- 時間計測開始&条件表示  end -----*/
 
-	// 変数の定義
-	std::vector<float> detector(cond.detector_size_w * cond.detector_size_h, 0.);
 
-	// 関数呼び出し
-	launch_test_gradient_pinhole(detector, pinhole_theta_xy, pinhole_theta_yz, pinhole_center, cond);
+
+
+
+	// 変数の定義
+	std::vector<int> pinhole_img_layer1(cond.pinhole_img_w * cond.pinhole_img_h, -1);
+	std::vector<int> pinhole_img_layer3(pinhole_img_layer1.size(), -1);
+	std::vector<int> fov(cond.detector_size_w * cond.detector_size_h, -1);
+	set_pinhole_img(pinhole_img_layer1, pinhole_img_layer3, fov, cond, pinhole_center, pinhole_theta_xy, pinhole_theta_yz);
 
 	/*----- 時間計測処理 start-----*/
 
@@ -124,106 +122,80 @@ int main()
 }
 
 
-void launch_test_gradient_pinhole(std::vector<float> &detector, std::vector<float> pinhole_theta_xy, std::vector<float> pinhole_theta_yz, std::vector<float> pinhole_center, Condition cond)
+void set_pinhole_img(std::vector<int> &pinhole_img_layer1, std::vector<int> &pinhole_img_layer3, std::vector<int> &fov, Condition cond, std::vector<float> pinhole_center, std::vector<float> pinhole_theta_xy, std::vector<float> pinhole_theta_yz)
 {
-	for(int i = 0; i < cond.photon_num; i++)
+	for(int pinhole_num = 0; pinhole_num < pinhole_theta_xy.size(); pinhole_num++)
 	{
-		Photon p;
-		p.move();
+		Eigen::Vector3f center;
+		center << pinhole_center[coord_num * pinhole_num + X], pinhole_center[coord_num * pinhole_num + Y], pinhole_center[coord_num * pinhole_num + Z];
+		float theta_xy = pinhole_theta_xy[pinhole_num];
+		float theta_yz = pinhole_theta_yz[pinhole_num];
 
-		for(int pinhole_num = 0; pinhole_num < pinhole_theta_xy.size(); pinhole_num++)
-		{
-			Eigen::Vector3f pin_center;
-			int cn = coord_num;
-			int pn = pinhole_num;
-			pin_center << pinhole_center[cn * pn + X], pinhole_center[cn * pn + Y], pinhole_center[cn * pn + Z];
+		create_pinhole_img_layer1(pinhole_img_layer1, cond, center, theta_xy, theta_yz, pinhole_num);
+		create_pinhole_img_layer3(pinhole_img_layer3, cond, center, theta_xy, theta_yz, pinhole_num);
+		create_fov(fov, cond, center, theta_xy, theta_yz, pinhole_num);
+	}
+	writeRawFile("./result/layer1_11pinhole_5mm_int_2048-1024.raw", pinhole_img_layer1);
+	writeRawFile("./result/layer3_11pinhole_5mm_int_2048-1024.raw", pinhole_img_layer3);
+	writeRawFile("./result/fov_11pinhole_5mm_int_512-256.raw", fov);
+}
 
-			bool pass_pinhole = passPinhole(p, pinhole_theta_xy[pinhole_num], pinhole_theta_yz[pinhole_num], pin_center, cond);
+void create_pinhole_img_layer1(std::vector<int> &pinhole_img, Condition cond, Eigen::Vector3f pinhole_center, float pinhole_theta_xy, float pinhole_theta_yz, int pinhole_num)
+{ create_pinhole_img( pinhole_img, cond, pinhole_center, pinhole_theta_xy, pinhole_theta_yz, pinhole_num, 0); }
 
-			if(!pass_pinhole) continue;
-			#ifdef DEBUG
-			printf("detect!\n");
-			#endif // DEBUG //
+void create_pinhole_img_layer3(std::vector<int> &pinhole_img, Condition cond, Eigen::Vector3f pinhole_center, float pinhole_theta_xy, float pinhole_theta_yz, int pinhole_num)
+{ create_pinhole_img( pinhole_img, cond, pinhole_center, pinhole_theta_xy, pinhole_theta_yz, pinhole_num, 1); }
 
-			detect_photon(p, detector, cond);
-			break;
-		}
+void create_fov(std::vector<int> &fov, Condition cond, Eigen::Vector3f pinhole_center, float pinhole_theta_xy, float pinhole_theta_yz, int pinhole_num)
+{ create_pinhole_img( fov, cond, pinhole_center, pinhole_theta_xy, pinhole_theta_yz, pinhole_num, 2); }
+
+
+
+void create_pinhole_img(std::vector<int> &img, Condition cond, Eigen::Vector3f pinhole_center, float pinhole_theta_xy, float pinhole_theta_yz, int pinhole_num, int option)
+{
+	// option { 0: layer1, 1: layer3, 2: fov }
+	std::vector<int> width{ cond.pinhole_img_w, cond.pinhole_img_w, cond.detector_size_w };
+	std::vector<int> height{ cond.pinhole_img_h, cond.pinhole_img_h, cond.detector_size_h };
+	std::vector<float> pixel_size_w{ cond.pinhole_img_pixel_size, cond.pinhole_img_pixel_size, cond.d_width };
+	std::vector<float> pixel_size_h{ cond.pinhole_img_pixel_size, cond.pinhole_img_pixel_size, cond.d_height };
+	float degree_to_rad = M_PI / 180.;
+	float collimator_radius = cond.width_collimator / 2.;
+	float aperture = cond.aperture_degree * degree_to_rad;
+	Eigen::Vector3f intersection_edge;  intersection_edge << 0, collimator_radius / tan(aperture), 0.;
+	int layer1 = 0;
+	if(option == layer1) intersection_edge(1) *= -1.;
+
+	Eigen::Vector3f intersection_edge_rot;
+	{
+		Eigen::Matrix3f rot_xy, rot_yz;
+		Eigen::Vector3f axis; axis << 0, 0, 1;
+		rot_xy = Eigen::AngleAxisf( pinhole_theta_xy * degree_to_rad, axis );
+
+		axis << 1, 0, 0;
+		rot_yz = Eigen::AngleAxisf( pinhole_theta_yz * degree_to_rad, axis );
+
+		intersection_edge_rot = rot_yz * rot_xy * intersection_edge + pinhole_center;
 	}
 
-	writeRawFile("./result/detector_float_512-256.raw", detector);
-}
+	std::vector<float> y{ static_cast<float>(- cond.rotation_radius + cond.height_collimator / 2.),
+		 										static_cast<float>(- cond.rotation_radius - cond.height_collimator / 2.),
+												static_cast<float>(- (cond.rotation_radius + cond.distance_collimator_to_detector)) };
+	for (int i = 0; i < height[option]; i++)
+	{
+		for (int j = 0; j < width[option]; j++)
+		{
+			float x = (j - (width[option] - 1.) / 2.) * pixel_size_w[option];
+			float z = ((height[option] - 1.) / 2. - i) * pixel_size_h[option];
+			Eigen::Vector3f layer; layer << x, y[option], z;
 
-bool passPinhole(class Photon p, float pinhole_theta_xy, float pinhole_theta_yz, Eigen::Vector3f pinhole_center, Condition cond)
-{
-	// l1の通過判定
-	// l3の通過判定
-	// l2の通過判定
+			Eigen::Vector3f base; base = pinhole_center - intersection_edge_rot;
+			Eigen::Vector3f intersection_to_layer; intersection_to_layer = layer - intersection_edge_rot;
 
-	#ifdef DEBUG
-	std::cout << "pinhole_theta_xy = " << pinhole_theta_xy << '\n';
-	std::cout << "pinhole_theta_yz = " << pinhole_theta_yz << '\n';
-	#endif // DEBUG //
+			float dot = intersection_to_layer.dot(base);
+			float norm1 = intersection_to_layer.norm();
+			float norm2 = base.norm();
 
-	Eigen::Vector3f past_rot, curr_rot, axis;
-  Eigen::Matrix3f rot_xy, rot_zx;
-
-	// pinhole_center << 0., - (cond.rotation_radius + cond.height_collimator / 2.), 0.;
-
-	/* x軸正方向からy軸正方向に向けての回転を正として回転 */
-	axis << 0, 0, 1;
-  rot_xy = Eigen::AngleAxisf( - pinhole_theta_xy * M_PI / 180., axis );
-
-	/* z軸正方向からy軸正方向に向けての回転を正として回転 */
-  axis << 1, 0, 0;
-  rot_zx = Eigen::AngleAxisf( pinhole_theta_yz * M_PI / 180., axis );
-
-	past_rot = rot_zx * rot_xy * (p.past_ - pinhole_center) + pinhole_center;
-	curr_rot = rot_zx * rot_xy * (p.curr_ - pinhole_center) + pinhole_center;
-
-	Eigen::Vector3f on_collimator;
-	on_collimator(1) = - (cond.rotation_radius + cond.height_collimator / 2.);
-	float t = (on_collimator(1) - past_rot(1)) / (curr_rot(1) - past_rot(1));
-	on_collimator(0) = past_rot(0) + t * (curr_rot(0) - past_rot(0));
-	on_collimator(2) = past_rot(2) + t * (curr_rot(2) - past_rot(2));
-
-	bool is_in_pinhole = pow(on_collimator(0) - pinhole_center(0), 2.) + pow(on_collimator(2) - pinhole_center(2), 2.) < pow(cond.width_collimator / 2., 2.);
-	if (!is_in_pinhole)
-  {
-    #ifdef DEBUG
-    // std::cout << "not detect!" << std::endl;
-    #endif // DEBUG //
-		return false;
-  }
-
-	return true;
-}
-
-void detect_photon(class Photon p, std::vector<float> &detector, Condition cond)
-{
-	// 検出処理
-	Eigen::Vector3f on_detector;
-	on_detector(1) = - (cond.rotation_radius + cond.distance_collimator_to_detector);
-	float t = (on_detector(1) - p.past_(1)) / (p.curr_(1) - p.past_(1));
-	on_detector(0) = p.past_(0) + t * (p.curr_(0) - p.past_(0));
-	on_detector(2) = p.past_(2) + t * (p.curr_(2) - p.past_(2));
-
-	int i = cond.detector_size_h / 2. -  ceilf(on_detector(2) / cond.d_height);
-  int j = cond.detector_size_w / 2. + floorf(on_detector(0) / cond.d_width);
-
-	#ifdef DEBUG
-
-	std::cout << " ------------- " << std::endl;
-	std::cout << "p.past_ = " << p.past_ << std::endl;
-	std::cout << "p.curr_ = " << p.curr_ << std::endl;
-	std::cout << "p.theta_ = " << p.theta_ << std::endl;
-	std::cout << "p.phi_ = " << p.phi_ << std::endl;
-	std::cout << "i = " << i << ", j = " << j << std::endl;
-	std::cout << " ------------- " << std::endl;
-
-	#endif // DEBUG //
-
-	if ( 0 > i || i > cond.detector_size_h || 0 > j || j > cond.detector_size_w ) return;
-
-	detector[cond.detector_size_w * i + j] = 1.;
-
+			if ( acosf( dot / (norm1 * norm2) ) <  aperture ){ img[width[option] * i + j] = pinhole_num;  }
+		}
+	}
 }

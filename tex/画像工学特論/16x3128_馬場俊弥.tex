@@ -1,155 +1,55 @@
-\documentclass[dvipdfmx,autodetect-engine,twocolumn,10pt]{jsarticle}% autodetect-engine で pLaTeX / upLaTeX を自動判定
+\documentclass[dvipdfmx,autodetect-engine]{jsarticle}% autodetect-engine で pLaTeX / upLaTeX を自動判定
 \setlength{\columnsep}{3zw}
 \usepackage[dvipdfmx]{graphicx}
 \usepackage{amsmath,amssymb}
 
-\title{マルチピンホールコリメータの実装}
+\title{画像工学特論1　レポート}
 \author{法政大学理工学部 応用情報工学科 4年 16X3128 馬場俊弥}
 \date{\today}
 
 \begin{document}
 
 \maketitle
-\section{はじめに}
-SPECT（Single Photon Emission Computed Tomography）とは放射性同位元素（RI：Radio Isotope）を用いた放射性医薬品を体内に投与することによって，放射性医薬品から出る微量な放射線（γ線）をさまざなま方向から測定し，断層画像にする方法である．
+Modality : SPECT
+\section{What is SPECT ?}
 
-SPECTによる測定において，γ線を収集する方向を一定にするために，コリメータと呼ばれる装置を用いる．コリメータにはシングルピンホールコリメータ，マルチピンホールコリメータ，パラレルホールコリメータなどがある．コリメータのピンホールは本来円形をしているが，ピンホールの形を矩形にした，マルチ矩形ピンホールSPECTの開発を研究テーマとして研究を行なっている．この研究を進めるにあたり，今回は，マルチピンホールコリメータの実装を行った．ray tracingで投影データを取得し，再構成を行なった結果を2次元，3次元でそれぞれ紹介する．
+Single photon emission CT (SPECT) is a technique to reconstruct the distribution radiopharmaceuticals in the patient with projection data measured at many angles. As a concrete method, first, patient administer RadioIsotope. It is Radiopharmaceutical that emit gamma-ray and accumulate organ. SPECT measured gamma-ray emitted from administered organ and imaging it. As a feature, gamma-ray energy is about 140 KeV and compareing to CT that irradiate to organ, SPECT is low exposure dose.
 
-\newpage
+\section{principle}
+I introduce the principle in three parts, projection, detect and reconstruct.
+\subsection{projection}
+As introduced in section 1, patiant administer RadioIsotope. RadioIsotope accumulate organ and emit gamma-ray. it measure at many angles, detector detect it.
+\subsection{detect}
+First, gamma rays are converted to visible light by the scintillator. Scintillator is device that emits light when charged particles pass. After that, the photoelectric effect occurs. the photoelectric effect convert ray into photoelectron. So using photomultiplier tubes, photoelectron amplify and turn into electrical signals. By detecting electrical signals, SPECT systerm detect gamma-ray.
 
-\section{2次元マルチピンホールコリメータ}
+\subsection{reconstruct}
+\subsubsection{MLEM}
+As a method often used to perform reconstruction, Maximum Likehood-Expectation Maximization(ML-EM) method exists. It is a method to perform reconstruction by taking the ratio of the projection data of the estimated image and the actual projection data. Since mlem is performed by taking the ratio, data that is closer to an actual tomographic image can be obtained by repeating mlem.
 
-\subsection{実装方法}
-ピンホールを複数にする場合，それぞれのピンホールから物体全体を捉えるためには，それぞれのピンホールに傾きをつける必要がある．
-\begin{figure}[htbp]
-  \begin{center}
-    \includegraphics[width=7.5cm]{./file/gradient.png}\\
-    \caption{左：傾き無し，右：傾き有り}
-    \label{gradient}
-  \end{center}
-\end{figure}
+The problem with using mlem for reconstruction is when there is noise in the projection data, using mlem cannot give correct results. Therefore, at the time of reconstruction, by performing correction, reconstruction is properly performed. I will introduce two typical methods this time.
+\subsubsection{Absorption correction}
+The projection data of the estimated image acquired by the mlem method is pseudo drawing a projection line to create projection data. However, when getting it by 1 method, there will be less projection data than expected due to the interaction of gamma rays. Therefore, when acquiring a projection data by drawing a pseudo projection line with mlem, the projection data of the estimated image is created in consideration of the amount absorbed. This makes it possible to create a more beautiful reconstructed image.
+\subsubsection{TEW}
+Triple energy windows(TEW) is a method that remove scattered radiation. When acquiring projection data, the gamma rays that reach the detector without any interaction are correct data. However, due to the interaction, if the direction of the γ-ray changes, it will be detected at a different position from correct position. To prevent this, we use projection data that photons are only primary photons. TEW divides the energy spectrum into three and estimates primary photons. I show the calculation formula of TEW as follows.
+\[
+  C_{prim} = C_{total} - \frac{W_{main}}{2}(\frac{C_{low}}{W_{sub}} + \frac{C_{high}}{W_{sub}})
+\]
 
-\subsection{シミュレーション条件}
-シミュレーション条件を表\ref{simu_2d}に示す.
+\section{What devices are being developed ?}
+\subsection{collimator}
+A collimator is one that determines the direction of incidence of gamma rays incident on the detector. It is made of lead and tungsten. When it collides with the metal which a collimator constitutes, gamma ray disappears by generating photoelectric effect. There are various types of collimators, and typical ones are parallel hole collimators, fan beam collimators, and pinhole collimators.
 
-\begin{table}[htbp]
-  \begin{center}
-    \caption{シミュレーション条件}
-    \label{simu_2d}
-    \small
-    \scalebox{0.82}[0.9]
-    {
-      \begin{tabular}{|c|c|} \hline
-        ファントム & Sheppファントム \\ \hline
-        長径，短径 & 24.4 cm, 18.4 $cm$ \\ \hline
-        回転半径 & 25 $cm$ \\ \hline
-        画像サイズ & 128×128 $pixel$ \\ \hline
-        画像のピクセルサイズ & 0.2×0.2 $cm^2$ \\ \hline
-        コリメータから検出器までの距離 & 7.5 $cm$ \\ \hline
-        検出のサイズ & 512 $pixel$ \\ \hline
-        検出のピクセルサイズ & 0.08 $cm$ \\ \hline
-        投影数 & 180 \\ \hline
-        コリメータ & 無限小（30度以内は通過） \\ \hline
-        コリメータの位置 & 左から x = - 9, 0, 9 \\ \hline
-      \end{tabular}
-    }
-  \end{center}
-\end{table}
-
-\subsection{結果}
-投影画像を図\ref{proj_2d}，再構成結果を図\ref{reconst_2d}，プロファイルを図\ref{profile_2d}にそれぞれ示す．
-
-\begin{figure}[htbp]
-  \begin{center}
-    \includegraphics[width=7.5cm]{./file/detector_float_512-180.png}\\
-    \caption{投影画像}
-    \label{proj_2d}
-  \end{center}
-\end{figure}
-
-\begin{figure}[htbp]
-  \begin{center}
-    \includegraphics[width=3cm]{./file/ML-EM100_float_128-128.png}\\
-    \caption{再構成結果（ML-EM 100回）}
-    \label{reconst_2d}
-  \end{center}
-\end{figure}
-
-\begin{figure}[htbp]
-  \begin{center}
-    \includegraphics[width=6cm]{./file/profile_2d.png}\\
-    \caption{プロファイル}
-    \label{profile_2d}
-  \end{center}
-\end{figure}
-
-\newpage
+Parallel Hall collimators are the collimators most commonly used in gamma cameras. Since it is perpendicular to the detector plane, a gamma ray image of an object of full scale is obtained.
+\subsection{detector}
+As detectors, there are single crystal detector and pixel-type detector. In pixel-type detectors, spatial resolution is improved by making grooves in a grid shape. The fan beam collimator has a straight line of focus. This improves the spatial resolution in the specific direction. A pinhole collimator detects a small hole of about several millimeters. The projection data is reversed vertically and horizontally. However, the closer the object is to the pinhole, the larger the image will be and the higher the sensitivity.
 
 
-\section{3次元マルチピンホールコリメータ}
+\section{Medical application}
+The SPECT system is mainly the method of acquiring projection data by rotating around an object. This method is called a rotation SPECT system. The rotation type has the disadvantage that it takes time to acquire while accurate projection data can be obtained. In order to eliminate this shortcoming, static SPECT systems have been developed. Since this does not rotate the detector, acquisition time can be shortened. However, because the number of projections is small, the reconstructed image becomes dirty compared to rotation SPECT. The future task is to generate a beautiful reconstructed image in a short time without rotating detectors.
 
-\subsection{シミュレーション条件}
-シミュレーション条件を表\ref{simu_3d}に示す.
+\section{References}
+[1] Ogawa Koichi : Basics of collimator in gamma camera\\
+http://www.rinshokaku.com/contents/pdf/sec7/1.pdf
 
-\begin{table}[htbp]
-  \begin{center}
-    \caption{シミュレーション条件}
-    \label{simu_3d}
-    \small
-    \scalebox{0.82}[0.9]
-    {
-      \begin{tabular}{|c|c|} \hline
-        ファントム & Sheppファントム \\ \hline
-        長径，短径 & 24.4 cm, 18.4 $cm$ \\ \hline
-        回転半径 & 25 $cm$ \\ \hline
-        画像サイズ & 128×128×128 $voxel$ \\ \hline
-        画像のピクセルサイズ & 0.2×0.2×0.2 $cm^3$ \\ \hline
-        コリメータから検出器までの距離 & 7.0 $cm$ \\ \hline
-        検出のサイズ & 512×256 $pixel$ \\ \hline
-        検出のピクセルサイズ & 0.08×0.08 $cm^2$ \\ \hline
-        投影数 & 180 \\ \hline
-        コリメータ & 無限小（30度以内は通過） \\ \hline
-      \end{tabular}
-    }
-  \end{center}
-\end{table}
-
-\subsection{結果}
-有効視野を図\ref{fov}，投影画像を図\ref{proj_3d}，再構成結果を図\ref{reconst_3d}，プロファイルを図\ref{profile_3d}にそれぞれ示す．
-
-\begin{figure}[htbp]
-  \begin{center}
-    \includegraphics[width=7.5cm]{./file/fov_float_512-256.png}\\
-    \caption{有効視野}
-    \label{fov}
-  \end{center}
-\end{figure}
-
-\begin{figure}[htbp]
-  \begin{center}
-    \includegraphics[width=7.5cm]{./file/proj_float_512-256-50.png}\\
-    \caption{投影画像}
-    \label{proj_3d}
-  \end{center}
-\end{figure}
-
-\begin{figure}[htbp]
-  \begin{center}
-    \includegraphics[width=3cm]{./file/ML-EM200_float_128-128-128.png}\\
-    \caption{再構成結果（ML-EM 100回）}
-    \label{reconst_3d}
-  \end{center}
-\end{figure}
-
-\begin{figure}[htbp]
-  \begin{center}
-    \includegraphics[width=6cm]{./file/profile_3d.png}\\
-    \caption{プロファイル}
-    \label{profile_3d}
-  \end{center}
-\end{figure}
-
-\section{まとめと今後の展望}
-3次元のマルチピンホールが想像よりも綺麗な画像にならなかったため，原因を特定する．また，今回はコリメータは厚さ 0 cmの理想的なコリメータで実装を行なったが，ナイフエッジにして実装を行う．その後，以前行なったモンテカルロシミュレーションをマルチピンホールコリメータを用いて行う．
 
 \end{document}
