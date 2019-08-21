@@ -1,5 +1,7 @@
 /*
 
+y軸の負の方向に検出器を置いている
+
 floatにしてある
 genrand_real1() //一様実乱数[0,1] (32ビット精度)
 genrand_real2() //一様実乱数[0,1) (32ビット精度)
@@ -153,6 +155,11 @@ void create_fov(std::vector<int> &fov, Condition cond, Eigen::Vector3f pinhole_c
 
 void create_pinhole_img(std::vector<int> &img, Condition cond, Eigen::Vector3f pinhole_center, float pinhole_theta_xy, float pinhole_theta_yz, int pinhole_num, int option)
 {
+	/*
+	実装のアルゴリズム
+	https://paper.dropbox.com/doc/--AjQNF888gr4SxY2nmhuvsAERAQ-zfZOaNRJYJ2QN2vVwrZTU
+	*/
+
 	// option { 0: layer1, 1: layer3, 2: fov }
 	std::vector<int> width{ cond.pinhole_img_w, cond.pinhole_img_w, cond.detector_size_w };
 	std::vector<int> height{ cond.pinhole_img_h, cond.pinhole_img_h, cond.detector_size_h };

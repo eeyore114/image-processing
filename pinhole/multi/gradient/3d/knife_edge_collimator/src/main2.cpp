@@ -1,5 +1,7 @@
 /*
 
+x軸の正の方向に検出器を置いている
+
 floatにしてある
 genrand_real1() //一様実乱数[0,1] (32ビット精度)
 genrand_real2() //一様実乱数[0,1) (32ビット精度)
@@ -10,7 +12,7 @@ genrand_real3() //一様実乱数(0,1) (32ビット精度)
 これを必ずつける（これないとエラーがでる）
 */
 
-#include <stdio.h>
+#include <stdio.h>
 #include <unistd.h>
 #include <iostream>
 #include <stdlib.h>
@@ -18,7 +20,7 @@ genrand_real3() //一様実乱数(0,1) (32ビット精度)
 #include <sstream>
 #include <sys/stat.h>
 #include "../Eigen/Core"
-#include "../Eigen/Dense"
+#include "../Eigen/Dense"
 #include "../Eigen/Geometry"
 #include "../include/fileio.h"
 #include "../include/Mersenne_twister.h"
