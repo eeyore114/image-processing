@@ -1,0 +1,163 @@
+\documentclass[dvipdfmx,autodetect-engine,twocolumn,10pt]{jsarticle}% autodetect-engine で pLaTeX / upLaTeX を自動判定
+\setlength{\columnsep}{3zw}
+\usepackage[dvipdfmx]{graphicx}
+\usepackage{amsmath,amssymb}
+
+\title{四角形マルチピンホールを用いたSPECTシステムの提案}
+\author{法政大学理工学部 応用情報工学科 4年 16X3128 馬場俊弥}
+\date{\today}
+
+\begin{document}
+
+
+\maketitle
+\section{はじめに}
+% \abstract{
+SPECT（Single Photon Emission Computed Tomography）とは放射性同位元素（RI：Radio Isotope）を用いた放射性医薬品を体内に投与することによって，放射性医薬品から出る微量な放射線（γ線）をさまざなま方向から測定し，断層画像にする方法である．
+
+SPECTによる測定において，γ線を収集する方向を一定にするために，コリメータと呼ばれる装置を用いる．コリメータにはシングルピンホールコリメータ，マルチピンホールコリメータ，パラレルホールコリメータなどがある．コリメータのピンホールは本来円形をしているが，ピンホールの形を四角形にした，マルチ四角形ピンホールSPECTの開発を研究テーマとして研究を行なっている．この研究を進めるにあたり，現在，マルチピンホールコリメータを用いた，モンテカルロシミュレーションの実装を行なっている．今回はその過程で実装を行なった投影データ取得，感度補正について紹介する．また，ピンホールの形を四角形にしたものを実装したため，それも合わせて紹介する．
+% }
+
+
+
+\section{研究概要}
+通常ピンホールは円形をしているが．有効視野の範囲外になってしまう部分，すなわち，検出器の中に，検出に使用しない領域が発生してしまう．検出に使用しない領域を小さくするために，ピンホールを四角形した，四角形マルチピンホールSPECTシステムを提案する．
+
+円形ピンホールと四角形ピンホールを図\ref{cmp_pinhole}に示す．
+
+\begin{figure}[htbp]
+  \begin{center}
+    \includegraphics[width=7cm]{./file/cmp.png}\\
+    \caption{マルチピンホールの例}
+    \label{cmp_pinhole}
+  \end{center}
+\end{figure}
+
+
+また，同一の条件で行なった場合の円形ピンホールの有効視野を図\ref{circle_fov}，四角形ピンホールの有効視野を図\ref{square_fov}に示す．
+
+\begin{figure}[htbp]
+  \begin{center}
+    \includegraphics[width=7cm]{./file/fov_11pinhole_5mm_int_512-256.png}\\
+    \caption{円形ピンホールの有効視野}
+    \label{circle_fov}
+  \end{center}
+\end{figure}
+
+
+\begin{figure}[htbp]
+  \begin{center}
+    \includegraphics[width=7cm]{./file/fov_11pinhole_square_5mm_int_512-256.png}\\
+    \caption{四角形ピンホールの有効視野}
+    \label{square_fov}
+  \end{center}
+\end{figure}
+
+ピンホールの配置や傾きを変えることによって，検出に使用しない領域を，最小限にすることにより，検出効率をあげることが研究の目的である．その際に，四角形の方が，検出器の角の周辺を有効視野にすることが容易であり，有効視野同士の重なりを少なくすることができる．
+
+
+\section{マルチピンホールコリメータを用いたモンテカルロシミュレーション}
+
+
+\subsection{シミュレーション条件}
+シミュレーション条件を表\ref{simu_2d}に示す.
+
+\begin{table}[htbp]
+  \begin{center}
+    \caption{シミュレーション条件}
+    \label{simu_2d}
+    \small
+    \scalebox{0.82}[0.9]
+    {
+      \begin{tabular}{|c|c|} \hline
+        ファントム & Sheppファントム \\ \hline
+        回転半径 & 17 $cm$ \\ \hline
+        画像サイズ & 128×128×128 $voxels$ \\ \hline
+        画像のボクセルサイズ & 0.2×0.2×0.2 $cm^3$ \\ \hline
+        コリメータから検出器までの距離 & 7.6 $cm$ \\ \hline
+        検出のサイズ & 512×256 $pixels$ \\ \hline
+        検出のピクセルサイズ & 0.08×0.08 $cm^2$ \\ \hline
+        検出器の数 & 180 \\ \hline
+        コリメータ & ナイフエッジ \\ \hline
+        コリメータの幅 & 0.5 $cm$ \\ \hline
+        コリメータ開口角 & 24度 \\ \hline
+      \end{tabular}
+    }
+  \end{center}
+\end{table}
+
+ピンホールの配置は，左上から，\\
+（-11.0, 4.0）, (-3.0, 4.5), (3.0, 4.5), (11.0, 4.0),\\
+ (-6.5, 0.0), (0.0, 0.0), (6.5, 0.0), \\
+ (-11.0, -4.0), (-3.0, -4.5), (3.0, -4.5), (11.0, -4.0)
+
+ピンホールの角度は，（横の角度，縦の角度）とすると，\\
+(-24.0, -9.5), (-7.0, -10.5), (7.0, -10.5), (24.0, -9.5), \\
+(-15.0, 0.0), (0.0, 0.0), (15.0, 0.0),\\
+(-24.0, 9.5), (-7.0, 10.5), (7.0, 10.5), (24.0, 9.5), \\
+
+
+\subsection{結果}
+\subsubsection{投影データ取得}
+モンテカルロ法を用いた光子輸送を用いて取得した投影画像とそのプロファイルをそれぞれ図\ref{proj}，図\ref{proj_profile}示す．
+\begin{figure}[htbp]
+  \begin{center}
+    \includegraphics[width=7cm]{./file/primary_detector_float_512-256-180.png}\\
+    \caption{投影画像}
+    \label{proj}
+  \end{center}
+\end{figure}
+
+\begin{figure}[htbp]
+  \begin{center}
+    \includegraphics[width=7cm]{./file/proj_profile.png}\\
+    \caption{プロファイル}
+    \label{proj_profile}
+  \end{center}
+\end{figure}
+
+\subsubsection{感度補正}
+感度マップを作成し，正規化を行なった画像とそのプロファイルをそれぞれ図\ref{effi_map_std}，図\ref{effi_map_std_profile}に示す．
+
+\begin{figure}[htbp]
+  \begin{center}
+    \includegraphics[width=7cm]{./file/efficiency_map_standardization_float_512-256.png}\\
+    \caption{感度マップ}
+    \label{effi_map_std}
+  \end{center}
+\end{figure}
+
+\begin{figure}[htbp]
+  \begin{center}
+    \includegraphics[width=7cm]{./file/effi_map_std_profile.png}\\
+    \caption{プロファイル}
+    \label{effi_map_std_profile}
+  \end{center}
+\end{figure}
+\newpage
+また，投影データに感度補正をかけた画像とそのプロファイルをそれぞれ図\ref{eff_correc}，図\ref{eff_correc_profile}に示す．
+
+\begin{figure}[htbp]
+  \begin{center}
+    \includegraphics[width=7cm]{./file/efficiency_correction_float_512-256-180.png}\\
+    \caption{感度補正をかけた投影データ}
+    \label{eff_correc}
+  \end{center}
+\end{figure}
+
+\begin{figure}[htbp]
+  \begin{center}
+    \includegraphics[width=7cm]{./file/eff_correc_profile.png}\\
+    \caption{プロファイル}
+    \label{eff_correc_profile}
+  \end{center}
+\end{figure}
+
+\newpage
+
+
+
+\section{まとめと今後の展望}
+今後，再構成処理の修正を行い，モンテカルロ法を用いて取得した投影データを用いて，再構成を行えるようにする．その後，四角形のピンホールを用いて同様のシミュレーションを行う．
+
+\end{document}
