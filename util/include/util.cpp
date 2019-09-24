@@ -3,7 +3,9 @@
 
 enum Coordinate { X, Y, Z, coord_num };
 
+bool is_in_image(int i, int height, int j, int width) { return (0 < i && i < height && 0 < j && j < width); }
 bool is_out_of_image(int i, int height, int j, int width) { return (0 > i || i > height || 0 > j || j > width); }
+bool is_in_image_3d(int i, int height, int j, int width, int k, int depth) { return (0 < i && i < height && 0 < j && j < width && 0 < k && k < depth); }
 bool is_out_of_image_3d(int i, int height, int j, int width, int k, int depth) { return (0 > i || i > height || 0 > j || j > width || 0 > k || k > depth); }
 int transform_img_coordinate_same_axis(float x, int w, float pixel_size) { return x / pixel_size + (w - 1.0f) / 2.0f; }
 int transform_img_coordinate_opposite_axis(float y, int h, float pixel_size) { return (h - 1.0f) / 2.0f - y / pixel_size; }
