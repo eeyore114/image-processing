@@ -12,7 +12,8 @@ genrand_real3() //一様実乱数(0,1) (32ビット精度)
 これを必ずつける（これないとエラーがでる）
 */
 
-#include <stdio.h>
+
+#include <stdio.h>
 #include <unistd.h>
 #include <iostream>
 #include <stdlib.h>
@@ -20,7 +21,7 @@ genrand_real3() //一様実乱数(0,1) (32ビット精度)
 #include <sstream>
 #include <sys/stat.h>
 #include "../Eigen/Core"
-#include "../Eigen/Dense"
+#include "../Eigen/Dense"
 #include "../Eigen/Geometry"
 #include "../include/fileio.h"
 #include "../include/Mersenne_twister.h"
@@ -62,11 +63,11 @@ int main()
 	cond.detector_size_h = 256;
 	cond.pinhole_img_w = 1024 * 2;
 	cond.pinhole_img_h = 512 * 2;
-	cond.rotation_radius = 13;
+	cond.rotation_radius = 25;
 	cond.distance_collimator_to_detector = 7.6;
 	cond.height_collimator = 1.;
-	cond.width_collimator = 0.5;
-	cond.img_pixel_size = 0.2;
+	cond.width_collimator = 0.4;
+	cond.img_pixel_size = 0.15;
 	// cond.pinhole_img_pixel_size = 0.08 / 4;
 	cond.pinhole_img_pixel_size = 0.04 / 2;
 	cond.d_width = 0.08;
@@ -125,9 +126,13 @@ void set_pinhole_img(std::vector<int> &pinhole_img_layer1, std::vector<int> &pin
 		create_pinhole_img_layer3(pinhole_img_layer3, cond, center, theta_xy, theta_zx, pinhole_num);
 		create_fov(fov, cond, center, theta_xy, theta_zx, pinhole_num);
 	}
-	writeRawFile("./result/layer1_11pinhole_5mm_int_2048-1024.raw", pinhole_img_layer1);
-	writeRawFile("./result/layer3_11pinhole_5mm_int_2048-1024.raw", pinhole_img_layer3);
-	writeRawFile("./result/fov_11pinhole_5mm_int_512-256.raw", fov);
+	// writeRawFile("./result/layer1_11pinhole_5mm_int_2048-1024.raw", pinhole_img_layer1);
+	// writeRawFile("./result/layer3_11pinhole_5mm_int_2048-1024.raw", pinhole_img_layer3);
+	// writeRawFile("./result/fov_11pinhole_5mm_int_512-256.raw", fov);
+
+	writeRawFile("./result/layer1_11pinhole_4mm_int_2048-1024.raw", pinhole_img_layer1);
+	writeRawFile("./result/layer3_11pinhole_4mm_int_2048-1024.raw", pinhole_img_layer3);
+	writeRawFile("./result/fov_11pinhole_4mm_int_512-256.raw", fov);
 }
 
 void create_pinhole_img_layer1(std::vector<int> &pinhole_img, Condition cond, Eigen::Vector3f pinhole_center, float pinhole_theta_xy, float pinhole_theta_zx, int pinhole_num)
