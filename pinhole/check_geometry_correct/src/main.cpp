@@ -11,6 +11,8 @@ genrand_real3() //一様実乱数(0,1) (32ビット精度)
 これを必ずつける（これないとエラーがでる）
 
 通った場所の特定をしようとしたらうまく行かない（origin_fov）
+
+交点逆かも
 */
 
 #include <stdio.h>
@@ -138,7 +140,7 @@ int main()
 	cond.detector_size_h = 256;
 	cond.surface_source_w = 2048;
 	cond.surface_source_h = 1024;
-	cond.rotation_radius = 60;
+	cond.rotation_radius = 25;
 	cond.photon_scale = 30000;
 	cond.photon_num_efficiency_map = 1E6;
 	cond.pinhole_img_w = 2048;
@@ -180,21 +182,21 @@ int main()
 	// };
 
 
-	std::vector<float> pinhole_theta_xy{ -28.68, -14.8, 0., 13., 24., -28.68, -14.8, 0., 13., 24. };
-	std::vector<float> pinhole_theta_zx{ -10.3f, -10.3f, -10.3f,  -10.3f, -10.3f, 10.3f, 10.3f, 10.3f, 10.3f, 10.3f };
+	std::vector<float> pinhole_theta_xy{ -25.6, -14.8, 0., 13., 25.6, -25.6, -14.8, 0., 13., 25.6 };
+	std::vector<float> pinhole_theta_zx{ -7.9f, -7.9f, -7.9f,  -7.9f, -7.9f, 7.9f, 7.9f, 7.9f, 7.9f, 7.9f };
 	cond.pinhole_count = pinhole_theta_xy.size();
 	std::vector<float> pinhole_center
 	{
-	    cond.rotation_radius, - 9.3,  3.1,
-			cond.rotation_radius,    -4.5,  3.1,
-			cond.rotation_radius,    0.,  3.1,
-	    cond.rotation_radius,    5,  3.1,
-			cond.rotation_radius,   11,  3.1,
-	    cond.rotation_radius, - 9.3, - 3.1,
-			cond.rotation_radius,    -4.5, - 3.1,
-			cond.rotation_radius,     0., - 3.1,
-	    cond.rotation_radius,    5, - 3.1,
-	    cond.rotation_radius,   11, - 3.1
+	    cond.rotation_radius, - 12,  3.5,
+			cond.rotation_radius,    -5.5,  3.5,
+			cond.rotation_radius,    0.,  3.5,
+	    cond.rotation_radius,    5.5,  3.5,
+			cond.rotation_radius,   12,  3.5,
+	    cond.rotation_radius, - 12, - 3.5,
+			cond.rotation_radius,    -5.5, - 3.5,
+			cond.rotation_radius,     0., - 3.5,
+	    cond.rotation_radius,    5.5, - 3.5,
+	    cond.rotation_radius,   12, - 3.5
 	};
 
 	HostCondition cond_host;
@@ -228,7 +230,7 @@ int main()
 	cond_host.read_knife_edge_layer1_name = "layer1_10pinhole_square_2-5mm_int_2048-1024.raw";
 	cond_host.read_knife_edge_layer3_name = "layer3_10pinhole_square_2-5mm_int_2048-1024.raw";
 
-	cond_host.write_origin_fov_name = "origin_fov_int_128-128-128.raw";
+	cond_host.write_origin_fov_name = "origin_fov_int_128-128-20.raw";
 
 
 
@@ -270,7 +272,7 @@ void launchCreateGeometry(std::vector<int>& fov, std::vector<float>& cross_point
 void launchCheckGeometryCorrect(std::vector<int>& fov, std::vector<float>& cross_point_collimator_y, std::vector<float>& cross_point_collimator_z, Condition cond, HostCondition cond_host)
 {
 	std::vector<float> img(cond.img_w * cond.img_h * cond.img_d);
-	std::vector<int> origin_fov(cond.img_w * cond.img_h * cond.img_d, -1);
+	std::vector<int> origin_fov(cond.img_w * cond.img_h * cond.pinhole_count * 2, -1);
 	readRawFile((cond_host.img_file + cond_host.read_activity_map_name).c_str(), img);
 	bool is_correct_geometry = CheckGometryCorrect(img, fov, origin_fov, cross_point_collimator_y, cross_point_collimator_z, cond);
 	writeRawFile((cond_host.date_directory + cond_host.write_origin_fov_name).c_str(), origin_fov);
@@ -314,7 +316,7 @@ bool CheckGometryCorrect(std::vector<float>& img, std::vector<int>& fov, std::ve
 				cross_point(1) = cross_point_collimator_z[coord_num * pinhole_num + Y];
 				cross_point(2) = cross_point_collimator_z[coord_num * pinhole_num + Z];
 			}
-			
+
 			Eigen::Vector3f on_detector;
 			on_detector(0) = cond.rotation_radius + cond.distance_collimator_to_detector;
 			on_detector(1) = transform_origin_coordinate_same_axis(j, cond.detector_size_w, cond.detector_pixel_size_w);
@@ -322,7 +324,7 @@ bool CheckGometryCorrect(std::vector<float>& img, std::vector<int>& fov, std::ve
 
 			// cout << "on_detector(X) = " << on_detector(X) << ", on_detector(Y) = " << on_detector(Y) << ", on_detector(Z) = " << on_detector(Z) << endl;
 			// cout << "------------------------------------------" << endl;
-			
+
 			Eigen::Vector3f direction_sp = calculate_unit_vector(on_detector, cross_point);
 			// 原点上じfovをみる
 			showOriginFOV(origin_fov, cross_point, on_detector, direction_sp, cond, pinhole_num, axis);
@@ -338,12 +340,12 @@ bool CheckGometryCorrect(std::vector<float>& img, std::vector<int>& fov, std::ve
 					-(cond.img_h - 1.0f) / 2.0f < sp(1) && sp(1) < (cond.img_h - 1.0f) / 2.0f &&
 					-(cond.img_d - 1.0f) / 2.0f < sp(2) && sp(2) < (cond.img_d - 1.0f) / 2.0f )
 				{
-					
+
 					int sp_i = transform_img_coordinate_opposite_axis(sp(Y), cond.img_h, 1.);
 					int sp_j = transform_img_coordinate_same_axis(sp(X), cond.img_w, 1.);
 					int sp_k = transform_img_coordinate_same_axis(sp(Z), cond.img_d, 1.);
 					int index = sp_k * cond.img_w * cond.img_h + sp_i * cond.img_w + sp_j;
-					if(img[index] > 0.1) 
+					if(img[index] > 0.1)
 					{
 						cout << "------------------------------------------" << endl;
 						cout << "img = " << img[index] << endl;
@@ -356,7 +358,7 @@ bool CheckGometryCorrect(std::vector<float>& img, std::vector<int>& fov, std::ve
 						return false;
 					}
 				}
-				
+
 				sp += direction_sp;
 			}
 		}
@@ -377,7 +379,7 @@ void showOriginFOV(std::vector<int> &origin_fov, Eigen::Vector3f cross_point, Ei
 
 	if(is_out_of_image(img_i, cond.img_h, img_j, cond.img_d)) return;
 
-	origin_fov[axis * pinhole_num * cond.img_h * cond.img_d +  cond.img_d * img_i + img_j] = 1;
+	origin_fov[(axis + 1) * pinhole_num * cond.img_h * cond.img_d +  cond.img_d * img_i + img_j] = 1;
 }
 
 
