@@ -81,7 +81,7 @@ int main()
 	// cond.collimator_w = 0.5;
 	cond.collimator_w_y_axis = 0.2;
 	cond.collimator_w_z_axis = 0.5;
-	cond.img_pixel_size = 0.2;
+	cond.img_pixel_size = 0.16;
 	// cond.pinhole_img_pixel_size = 0.08 / 4;
 	cond.pinhole_img_pixel_size = 0.04 / 2;
 	cond.d_width = 0.08;
@@ -238,7 +238,6 @@ void create_pinhole_img(std::vector<int> &img, Condition cond, Eigen::Vector3f p
 	}
 }
 
-
 Eigen::Vector3f rotate_and_move_intersection_edge(Eigen::Vector3f intersection_edge, Eigen::Vector3f pinhole_center, float pinhole_theta_xy, float pinhole_theta_zx)
 {
 	Eigen::Matrix3f rot_xy, rot_zx;
@@ -258,7 +257,6 @@ bool pass_rectangular_pinhole_y(Eigen::Vector3f intersection_to_layer, Eigen::Ve
 	return pass_rectangular_pinhole(intersection_to_layer_xy, base_xy, aperture, cond);
 }
 
-
 bool pass_rectangular_pinhole_z(Eigen::Vector3f intersection_to_layer, Eigen::Vector3f base, float aperture, Condition cond)
 {
 	Eigen::Vector2f intersection_to_layer_zx; intersection_to_layer_zx << intersection_to_layer(0), intersection_to_layer(2);
@@ -271,11 +269,8 @@ bool pass_rectangular_pinhole(Eigen::Vector2f intersection_to_layer, Eigen::Vect
 	float dot = intersection_to_layer.dot(base);
 	float norm1 = intersection_to_layer.norm();
 	float norm2 = base.norm();
-	if ( acosf( dot / (norm1 * norm2) ) > aperture ) return false;
-
-	return true;
+	return ( acosf( dot / (norm1 * norm2) ) < aperture );
 }
-
 
 float degree_to_rad(float theta_degree) {	return theta_degree * M_PI / 180.; }
 

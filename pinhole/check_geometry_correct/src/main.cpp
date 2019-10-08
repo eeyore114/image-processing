@@ -129,6 +129,7 @@ bool pass_rectangular_pinhole_z(Eigen::Vector3f intersection_to_layer, Eigen::Ve
 void showOriginFOV(std::vector<int> &origin_fov, Eigen::Vector3f cross_point, Eigen::Vector3f on_detector, Eigen::Vector3f d, Condition cond, int pinhole_num, int axis);
 
 
+
 int main()
 {
 	Condition cond;
@@ -158,7 +159,7 @@ int main()
 	// 矩形ピンホールの場合
 	cond.collimator_w_y_axis = 0.2;
 	cond.collimator_w_z_axis = 0.5;
-	cond.aperture_degree_xy = 20.;
+	cond.aperture_degree_xy = 24.;
 	cond.aperture_degree_zx = 30.;
 	/*-----------------------------*/
 	cond.pinhole_shape = RECTANGLE;
@@ -182,22 +183,40 @@ int main()
 	// };
 
 
-	std::vector<float> pinhole_theta_xy{ -25.6, -14.8, 0., 13., 25.6, -25.6, -14.8, 0., 13., 25.6 };
-	std::vector<float> pinhole_theta_zx{ -7.9f, -7.9f, -7.9f,  -7.9f, -7.9f, 7.9f, 7.9f, 7.9f, 7.9f, 7.9f };
+	std::vector<float> pinhole_theta_xy{ -24.7, -12.4, 0., 12.4, 24.7, -24.7, -12.4, 0., 12.4, 24.7 };
+	std::vector<float> pinhole_theta_zx{ -7.96f, -7.96f, -7.96f,  -7.96f, -7.96f, 7.96f, 7.96f, 7.96f, 7.96f, 7.96f };
 	cond.pinhole_count = pinhole_theta_xy.size();
 	std::vector<float> pinhole_center
 	{
-	    cond.rotation_radius, - 12,  3.5,
+	    cond.rotation_radius, - 11.5,  3.5,
 			cond.rotation_radius,    -5.5,  3.5,
 			cond.rotation_radius,    0.,  3.5,
 	    cond.rotation_radius,    5.5,  3.5,
-			cond.rotation_radius,   12,  3.5,
-	    cond.rotation_radius, - 12, - 3.5,
+			cond.rotation_radius,   11.5,  3.5,
+	    cond.rotation_radius, - 11.5, - 3.5,
 			cond.rotation_radius,    -5.5, - 3.5,
 			cond.rotation_radius,     0., - 3.5,
 	    cond.rotation_radius,    5.5, - 3.5,
-	    cond.rotation_radius,   12, - 3.5
+	    cond.rotation_radius,   11.5, - 3.5
 	};
+
+	//回転半径10のとき
+	// std::vector<float> pinhole_theta_xy{ -37, -19.2, 0., 19.2, 37, -37, -19.2, 0., 19.2, 37 };
+	// std::vector<float> pinhole_theta_zx{ -14.0f, -14.0f, -14.0f,  -14.0f, -14.0f, 14.0f, 14.0f, 14.0f, 14.0f, 14.0f };
+	// cond.pinhole_count = pinhole_theta_xy.size();
+	// std::vector<float> pinhole_center
+	// {
+	//     cond.rotation_radius, - 7.65,  2.5,
+	// 		cond.rotation_radius,    -3.5,  2.5,
+	// 		cond.rotation_radius,    0.,  2.5,
+	//     cond.rotation_radius,    3.5,  2.5,
+	// 		cond.rotation_radius,   7.65,  2.5,
+	//     cond.rotation_radius, - 7.65, - 2.5,
+	// 		cond.rotation_radius,    -3.5, - 2.5,
+	// 		cond.rotation_radius,     0., - 2.5,
+	//     cond.rotation_radius,    3.5, - 2.5,
+	//     cond.rotation_radius,   7.65, - 2.5
+	// };
 
 	HostCondition cond_host;
 	cond_host.init_position = "voxel"; //"voxel" or "origin"
@@ -300,6 +319,7 @@ bool CheckGometryCorrect(std::vector<float>& img, std::vector<int>& fov, std::ve
 {
 	rep(pinhole_num, cond.pinhole_count)
 	{
+		if(pinhole_num != 2) continue;
 		rep(axis, 2)rep(i, cond.detector_size_w)rep(j, cond.detector_size_h)
 		{
 			if(fov[i * cond.detector_size_w + j] == pinhole_num) continue;
@@ -356,6 +376,7 @@ bool CheckGometryCorrect(std::vector<float>& img, std::vector<int>& fov, std::ve
 						cout << "sp_i = " << sp_i << ", sp_j = " << sp_j << ", sp_k = " << sp_k << endl;
 						cout << "axis = " << axis << endl;
 						return false;
+						// sample_point = 300;
 					}
 				}
 
