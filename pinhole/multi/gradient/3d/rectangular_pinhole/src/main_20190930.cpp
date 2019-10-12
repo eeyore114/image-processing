@@ -90,6 +90,7 @@ int main()
 	cond.aperture_degree_xy = 24.;
 	cond.aperture_degree_zx = 24.;
 	std::vector<float> pinhole_theta_xy{ -24., 24., 0., -24., 24. };
+	cond.pinhole_count = pinhole_theta_xy.size();
 	// std::vector<float> pinhole_theta_xy(11, 0.);
 	std::vector<float> pinhole_theta_zx{ 	-9.5f, -9.5f, 0., 9.5f, 9.5f };
 	// std::vector<float> pinhole_theta_zx(11, 0.);
