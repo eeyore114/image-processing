@@ -21,3 +21,11 @@ Eigen::Vector3f calculate_unit_vector(Eigen::Vector3f past, Eigen::Vector3f curr
 	d /= d_norm;
 	return d;
 }
+
+Eigen::Vector2f calculate_unit_vector_2f(Eigen::Vector2f past, Eigen::Vector2f curr)
+{
+	Eigen::Vector2f d = curr - past;
+	float d_norm = d.norm();
+	d /= d_norm;
+	return d;
+}
