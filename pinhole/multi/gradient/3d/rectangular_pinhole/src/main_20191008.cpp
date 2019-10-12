@@ -64,9 +64,9 @@ void create_fov(std::vector<int> &fov, Condition cond, Eigen::Vector3f pinhole_c
 void create_pinhole_img_layer1(std::vector<int> &pinhole_img, Condition cond, Eigen::Vector3f pinhole_center, float pinhole_theta_xy, float pinhole_theta_zx, int pinhole_num);
 void create_pinhole_img_layer3(std::vector<int> &pinhole_img, Condition cond, Eigen::Vector3f pinhole_center, float pinhole_theta_xy, float pinhole_theta_zx, int pinhole_num);
 Eigen::Vector3f rotate_and_move_intersection_edge(Eigen::Vector3f intersection_edge, Eigen::Vector3f pinhole_center, float pinhole_theta_xy, float pinhole_theta_zx);
+void connecting_corners_with_lines(std::vector<int> &img, Condition cond, int pinhole_num, std::vector<int> &corner_i, std::vector<int> &corner_j, int width, int height, float pixel_size_w, float pixel_size_h);
 
-void plot_corner(std::vector<int> &img, Condition cond, Eigen::Vector3f pinhole_center, float pinhole_theta_xy, float pinhole_theta_zx, int pinhole_num, int option, std::vector<int> &corner_i, std::vector<int> &corner_j);
-void connecting_corners_with_lines(std::vector<int> &img, Condition cond, int pinhole_num, int option, std::vector<int> &corner_i, std::vector<int> &corner_j);
+void plot_corner(std::vector<int> &img, Condition cond, Eigen::Vector3f pinhole_center, float pinhole_theta_xy, float pinhole_theta_zx, int pinhole_num, std::vector<int> &corner_i, std::vector<int> &corner_j, int width, int height, float pixel_size_w, float pixel_size_h, int option);
 
 
 
@@ -170,19 +170,38 @@ void create_pinhole_img(std::vector<int> &img, Condition cond, Eigen::Vector3f p
 	int corner_count = 4;
 	std::vector<int> corner_i(corner_count * cond.pinhole_count);
 	std::vector<int> corner_j(corner_i.size());
-
-	plot_corner(img, cond, pinhole_center, pinhole_theta_xy, pinhole_theta_zx, pinhole_num, option, corner_i, corner_j);
-	connecting_corners_with_lines(img, cond, pinhole_num, option, corner_i, corner_j);
-	// fill_rectangle();
-	
-}
-	
-void connecting_corners_with_lines(std::vector<int> &img, Condition cond, int pinhole_num, int option, std::vector<int> &corner_i, std::vector<int> &corner_j)
-{
 	std::vector<int> width{ cond.pinhole_img_w, cond.pinhole_img_w, cond.detector_size_w };
 	std::vector<int> height{ cond.pinhole_img_h, cond.pinhole_img_h, cond.detector_size_h };
 	std::vector<float> pixel_size_w{ cond.pinhole_img_pixel_size, cond.pinhole_img_pixel_size, cond.d_width };
 	std::vector<float> pixel_size_h{ cond.pinhole_img_pixel_size, cond.pinhole_img_pixel_size, cond.d_height };
+
+	plot_corner(img, cond, pinhole_center, pinhole_theta_xy, pinhole_theta_zx, pinhole_num, corner_i, corner_j, width[option], height[option], pixel_size_w[option], pixel_size_h[option], option);
+	connecting_corners_with_lines(img, cond, pinhole_num, corner_i, corner_j, width[option], height[option], pixel_size_w[option], pixel_size_h[option]);
+	// fill_rectangle();
+	
+}
+
+// void fill_rectangle(std::vector<int> &img, Condition cond, int pinhole_img, int option)
+// {
+// 	std::vector<int> width{ cond.pinhole_img_w, cond.pinhole_img_w, cond.detector_size_w };
+// 	std::vector<int> height{ cond.pinhole_img_h, cond.pinhole_img_h, cond.detector_size_h };
+// 	std::vector<float> pixel_size_w{ cond.pinhole_img_pixel_size, cond.pinhole_img_pixel_size, cond.d_width };
+// 	std::vector<float> pixel_size_h{ cond.pinhole_img_pixel_size, cond.pinhole_img_pixel_size, cond.d_height };
+
+// 	rep(i, height[option])
+// 	{
+// 		int value_count = 0;
+// 		rep(j, width[option])
+// 		{
+// 			if(img[i * width[]])
+// 		}
+// 	}
+	
+// }
+	
+void connecting_corners_with_lines(std::vector<int> &img, Condition cond, int pinhole_num, std::vector<int> &corner_i, std::vector<int> &corner_j, int width, int height, float pixel_size_w, float pixel_size_h)
+{
+	
 	// 4かいループ
 	// 左上->右上、右上->右下、右下->左下、左下->左上
 	int num_of_sides = 4;
@@ -190,37 +209,35 @@ void connecting_corners_with_lines(std::vector<int> &img, Condition cond, int pi
 	rep(num, num_of_sides)
 	{
 		Eigen::Vector2f start, end, corner_vec, sp;
-		start(X) = transform_origin_coordinate_same_axis(corner_j[pinhole_num * corner_count + num], width[option], pixel_size_w[option]);
-		start(Y) = transform_origin_coordinate_opposite_axis(corner_i[pinhole_num * corner_count + num], height[option], pixel_size_h[option]);
+		start(X) = transform_origin_coordinate_same_axis(corner_j[pinhole_num * corner_count + num], width, pixel_size_w);
+		start(Y) = transform_origin_coordinate_opposite_axis(corner_i[pinhole_num * corner_count + num], height, pixel_size_h);
 
 		int index = (num + 1 == corner_count) ? pinhole_num * corner_count : pinhole_num * corner_count + num + 1;
 		// int index = num + 1;
-		end(X) = transform_origin_coordinate_same_axis(corner_j[index], width[option], pixel_size_w[option]);
-		end(Y) = transform_origin_coordinate_opposite_axis(corner_i[index], height[option], pixel_size_h[option]);
+		end(X) = transform_origin_coordinate_same_axis(corner_j[index], width, pixel_size_w);
+		end(Y) = transform_origin_coordinate_opposite_axis(corner_i[index], height, pixel_size_h);
 
 		// ベクトル作る
 		corner_vec = calculate_unit_vector_2f(start, end);
 
 		sp = start;
-		sp(X) /= pixel_size_w[option];
-		sp(Y) /= pixel_size_h[option];
+		sp(X) /= pixel_size_w;
+		sp(Y) /= pixel_size_h;
 
 		// その始点から終点まで点を売っていく（間隔：ピクセルサイズ）
 		int counter = 0;
 		int before_i, before_j;
-		cout << "pinhole_num: " << pinhole_num << ", num: " << num << endl;
-
 		for(int sp_count = 0; counter < 1; sp_count++)
 		{
 
-			int j = transform_img_coordinate_same_axis(sp(X), width[option]);
-			int i = transform_img_coordinate_opposite_axis(sp(Y), height[option]);
+			int j = transform_img_coordinate_same_axis(sp(X), width);
+			int i = transform_img_coordinate_opposite_axis(sp(Y), height);
 			if(i == before_i && j == before_j) { sp += corner_vec; continue; }
 			
 			// 終点まで達しば場合は終了（多少のズレがあるため、大まかは判断ししている）
 			bool recognize_value;
-			if(num == 0 || num == 2) recognize_value = img[(i - 1) * width[option] + j] == pinhole_num || img[(i + 1) * width[option] + j] == pinhole_num || img[i  * width[option] + j] == pinhole_num;
-			else recognize_value = img[i * width[option] + j - 1] == pinhole_num || img[i  * width[option] + j + 1] == pinhole_num || img[i  * width[option] + j] == pinhole_num;
+			if(num == 0 || num == 2) recognize_value = img[(i - 1) * width + j] == pinhole_num || img[(i + 1) * width + j] == pinhole_num || img[i  * width + j] == pinhole_num;
+			else recognize_value = img[i * width + j - 1] == pinhole_num || img[i  * width + j + 1] == pinhole_num || img[i  * width + j] == pinhole_num;
 
 			bool around_end_point = ((i - 1 == corner_i[index] && j - 1 == corner_j[index]) ||
 															 (i - 1 == corner_i[index] && j == corner_j[index]) ||
@@ -235,7 +252,7 @@ void connecting_corners_with_lines(std::vector<int> &img, Condition cond, int pi
 			bool reach_end_point = sp_count >= 5 && recognize_value && around_end_point;
 			if(reach_end_point) counter++;
 			
-			img[i * width[option] + j] = pinhole_num;
+			img[i * width + j] = pinhole_num;
 			sp += corner_vec;
 			before_i = i;
 			before_j = j;
@@ -244,14 +261,9 @@ void connecting_corners_with_lines(std::vector<int> &img, Condition cond, int pi
 	}
 }
 
-
-void plot_corner(std::vector<int> &img, Condition cond, Eigen::Vector3f pinhole_center, float pinhole_theta_xy, float pinhole_theta_zx, int pinhole_num, int option, std::vector<int> &corner_i, std::vector<int> &corner_j)
+void plot_corner(std::vector<int> &img, Condition cond, Eigen::Vector3f pinhole_center, float pinhole_theta_xy, float pinhole_theta_zx, int pinhole_num, std::vector<int> &corner_i, std::vector<int> &corner_j, int width, int height, float pixel_size_w, float pixel_size_h, int option)
 {
 	// option { 0: layer1, 1: layer3, 2: fov }
-	std::vector<int> width{ cond.pinhole_img_w, cond.pinhole_img_w, cond.detector_size_w };
-	std::vector<int> height{ cond.pinhole_img_h, cond.pinhole_img_h, cond.detector_size_h };
-	std::vector<float> pixel_size_w{ cond.pinhole_img_pixel_size, cond.pinhole_img_pixel_size, cond.d_width };
-	std::vector<float> pixel_size_h{ cond.pinhole_img_pixel_size, cond.pinhole_img_pixel_size, cond.d_height };
 
 	float collimator_radius_y = cond.collimator_w_y_axis / 2.;
 	float collimator_radius_z = cond.collimator_w_z_axis / 2.;
@@ -262,7 +274,6 @@ void plot_corner(std::vector<int> &img, Condition cond, Eigen::Vector3f pinhole_
 		 										static_cast<float>(cond.rotation_radius + cond.collimator_h / 2.),
 												static_cast<float>((cond.rotation_radius + cond.distance_collimator_to_detector)) };
 
-	/*--------------------- ピンホールの形が正しくなっていないため，修正 start -------------------------*/
 	
 	int corner_count = 4;
 	// 順番：左上，右上，右下，左下
@@ -319,12 +330,12 @@ void plot_corner(std::vector<int> &img, Condition cond, Eigen::Vector3f pinhole_
 		float t = (on_layer3[num](X) - pinhole_corner_layer2_rot[num](X)) / corner_vec[num](X);
 		on_layer3[num](Y) = pinhole_corner_layer2_rot[num](Y) + t * corner_vec[num](Y);
 		on_layer3[num](Z) = pinhole_corner_layer2_rot[num](Z) + t * corner_vec[num](Z);
-		int j = corner_j[pinhole_num * corner_count + num] = transform_img_coordinate_same_axis(on_layer3[num](Y), width[option], pixel_size_w[option]);
-		int i = corner_i[pinhole_num * corner_count + num] = transform_img_coordinate_opposite_axis(on_layer3[num](Z), height[option], pixel_size_h[option]);
+		int j = corner_j[pinhole_num * corner_count + num] = transform_img_coordinate_same_axis(on_layer3[num](Y), width, pixel_size_w);
+		int i = corner_i[pinhole_num * corner_count + num] = transform_img_coordinate_opposite_axis(on_layer3[num](Z), height, pixel_size_h);
 		
-		if(is_out_of_image(i, height[option], j, width[option])) continue;
+		if(is_out_of_image(i, height, j, width)) continue;
 		
-		img[width[option] * i + j] = pinhole_num;
+		img[width * i + j] = pinhole_num;
 	}
 }
 
