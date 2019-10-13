@@ -1,2 +1,0 @@
-a.out: back_projection_single_pinhole_circle_colimator.cpp
-	clang++ back_projection_single_pinhole_circle_colimator.cpp -O3
