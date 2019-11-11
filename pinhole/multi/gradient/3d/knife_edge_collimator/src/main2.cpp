@@ -1,7 +1,5 @@
 /*
 
-x軸の正の方向に検出器を置いている
-
 floatにしてある
 genrand_real1() //一様実乱数[0,1] (32ビット精度)
 genrand_real2() //一様実乱数[0,1) (32ビット精度)
@@ -34,7 +32,6 @@ typedef struct {
 	int detector_size_h;
 	int pinhole_img_w;
 	int pinhole_img_h;
-	int pinhole_count;
 	float img_pixel_size;
 	float pinhole_img_pixel_size;
 	float rotation_radius;
@@ -63,28 +60,33 @@ int main()
 	cond.detector_size_h = 256;
 	cond.pinhole_img_w = 1024 * 2;
 	cond.pinhole_img_h = 512 * 2;
-	cond.rotation_radius = 17;
+	cond.rotation_radius = 25;
 	cond.distance_collimator_to_detector = 7.6;
 	cond.height_collimator = 1.;
-	cond.width_collimator = 0.5;
-	cond.img_pixel_size = 0.2;
+	cond.width_collimator = 0.4;
+	cond.img_pixel_size = 0.15;
 	// cond.pinhole_img_pixel_size = 0.08 / 4;
 	cond.pinhole_img_pixel_size = 0.04 / 2;
 	cond.d_width = 0.08;
 	cond.d_height = 0.08;
 	cond.photon_num = 10000000;
 	cond.aperture_degree = 24.;
-	std::vector<float> pinhole_theta_xy{ -24., 24., 0., -24., 24. };
+	std::vector<float> pinhole_theta_xy{ -24., -7., 7., 24., -15., 0., 15., -24., -7., 7., 24. };
 	// std::vector<float> pinhole_theta_xy(11, 0.);
-	std::vector<float> pinhole_theta_zx{ -9.5f, -9.5f, 0., 9.5f, 9.5f };
-	cond.pinhole_count = pinhole_theta_xy.size();
+	std::vector<float> pinhole_theta_zx{ 	-9.5f,  -10.5f, -10.5f, -9.5f, 0., 0., 0., 9.5f,  10.5f, 10.5f, 9.5f };
 	// std::vector<float> pinhole_theta_zx(11, 0.);
 	std::vector<float> pinhole_center
 	{
 	    cond.rotation_radius, - 11.,  4.,
+	    cond.rotation_radius, -  3., 4.5,
+	    cond.rotation_radius,    3., 4.5,
 	    cond.rotation_radius,   11.,  4.,
+	    cond.rotation_radius, - 6.5,  0.,
 	    cond.rotation_radius,    0.,  0.,
+	    cond.rotation_radius,   6.5,  0.,
 	    cond.rotation_radius, - 11., - 4.,
+	    cond.rotation_radius, -  3., - 4.5,
+	    cond.rotation_radius,    3., - 4.5,
 	    cond.rotation_radius,   11., - 4.
 	};
 
@@ -121,23 +123,13 @@ void set_pinhole_img(std::vector<int> &pinhole_img_layer1, std::vector<int> &pin
 		create_pinhole_img_layer3(pinhole_img_layer3, cond, center, theta_xy, theta_zx, pinhole_num);
 		create_fov(fov, cond, center, theta_xy, theta_zx, pinhole_num);
 	}
+	// writeRawFile("./result/layer1_11pinhole_5mm_int_2048-1024.raw", pinhole_img_layer1);
+	// writeRawFile("./result/layer3_11pinhole_5mm_int_2048-1024.raw", pinhole_img_layer3);
+	// writeRawFile("./result/fov_11pinhole_5mm_int_512-256.raw", fov);
 
-	std::ostringstream ostr;
-	{
-		ostr << "./result/layer1_" << cond.pinhole_count << "pinhole_" << (int)(cond.width_collimator * 10) << "mm_int_" << cond.pinhole_img_w << "-" << cond.pinhole_img_h << ".raw";
-		std::string write_name = ostr.str(); ostr.str("");
-		writeRawFile(write_name.c_str(), pinhole_img_layer1);
-	}
-	{
-		ostr << "./result/layer3_" << cond.pinhole_count << "pinhole_" << (int)(cond.width_collimator * 10) << "mm_int_" << cond.pinhole_img_w << "-" << cond.pinhole_img_h << ".raw";
-		std::string write_name = ostr.str(); ostr.str("");
-		writeRawFile(write_name.c_str(), pinhole_img_layer3);
-	}
-	{
-		ostr << "./result/fov_" << cond.pinhole_count << "pinhole_" << (int)(cond.width_collimator * 10) << "mm_int_" << cond.detector_size_w << "-" << cond.detector_size_h << ".raw";
-		std::string write_name = ostr.str(); ostr.str("");
-		writeRawFile(write_name.c_str(), fov);
-	}
+	writeRawFile("./result/layer1_11pinhole_4mm_int_2048-1024.raw", pinhole_img_layer1);
+	writeRawFile("./result/layer3_11pinhole_4mm_int_2048-1024.raw", pinhole_img_layer3);
+	writeRawFile("./result/fov_11pinhole_4mm_int_512-256.raw", fov);
 }
 
 void create_pinhole_img_layer1(std::vector<int> &pinhole_img, Condition cond, Eigen::Vector3f pinhole_center, float pinhole_theta_xy, float pinhole_theta_zx, int pinhole_num)
