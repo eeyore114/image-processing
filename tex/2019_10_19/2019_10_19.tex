@@ -1,0 +1,248 @@
+\documentclass[dvipdfmx,autodetect-engine,twocolumn,10pt]{jsarticle}% autodetect-engine で pLaTeX / upLaTeX を自動判定
+\setlength{\columnsep}{3zw}
+\usepackage[dvipdfmx]{graphicx}
+\usepackage{amsmath,amssymb}
+
+\title{円形マルチピンホールと矩形マルチピンホールの比較}
+\author{法政大学理工学部 応用情報工学科 4年 16x3128 馬場俊弥}
+\date{\today}
+
+\begin{document}
+
+
+\maketitle
+\section{はじめに}
+% \abstract{
+SPECT（Single Photon Emission Computed Tomography）とは放射性同位元素（RI：Radio Isotope）を用いた放射性医薬品を体内に投与することによって，放射性医薬品から出る微量な放射線（γ線）をさまざなま方向から測定し，断層画像にする方法である．
+
+
+\section{研究概要}
+SPECTによる測定において，γ線を収集する方向を一定にするために，コリメータと呼ばれる装置を用いる．コリメータのピンホールは本来円形をしているが，ピンホールの形を矩形にした，マルチ矩形ピンホールSPECTシステムの開発を研究テーマとして研究を行なっている．通常ピンホールは円形をしているが．有効視野の範囲外になってしまう部分，すなわち，検出器の中に，検出に使用しない領域が発生してしまう．検出に使用しない領域を小さくするために，ピンホールを矩形した，矩形マルチピンホールSPECTシステムを提案する．ピンホールの配置や傾きを変えることによって，検出に使用しない領域を，最小限にすることにより，検出効率をあげることが研究の目的である．その際に，矩形の方が，検出器の角の周辺を有効視野にすることが容易であり，有効視野同士の重なりを少なくすることができる．
+
+\newpage
+\section{シミュレーション}
+\subsection{シミュレーション条件}
+シミュレーション条件を表\ref{simu_2d}に示す.
+\begin{table}[htbp]
+  \begin{center}
+    \caption{シミュレーション条件}
+    \label{simu_2d}
+    \small
+    \scalebox{0.82}[0.9]
+
+    {
+      \begin{tabular}{|c|c|} \hline
+        ファントム & Sheppファントム \\ \hline
+        初期エネルギー & 140 $KeV$ \\ \hline
+        最大散乱回数 & 5回 \\ \hline
+        検出器の数 & 90 \\ \hline
+        回転半径 & 25 $cm$ \\ \hline
+        画像サイズ & 128×128×128 $voxels$ \\ \hline
+        画像のボクセルサイズ & 0.16×0.16×0.16 $cm^3$ \\ \hline
+        コリメータから検出器までの距離 & 7.6 $cm$ \\ \hline
+        検出のサイズ & 512×256 $pixels$ \\ \hline
+        検出のピクセルサイズ & 0.08×0.08 $cm^2$ \\ \hline
+        補正 & 感度補正，吸収補正 \\ \hline
+        再構成 & ML-EM法 100回 \\ \hline
+      \end{tabular}
+    }
+  \end{center}
+\end{table}
+
+
+円形ピンホールのジオメトリを図\ref{circle_pinhole}に示す．
+\begin{figure}[htbp]
+  \begin{center}
+    \includegraphics[width=6.5cm]{./file/circle_geometry.png}\\
+    \caption{円形ピンホールのジオメトリ}
+    \label{circle_pinhole}
+  \end{center}
+\end{figure}
+
+\newpage
+矩形ピンホールのジオメトリを図\ref{square_pinhole}に示す．
+
+\begin{figure}[htbp]
+  \begin{center}
+    \includegraphics[width=6.5cm]{./file/square_geometry.png}\\
+    \caption{矩形ピンホールのジオメトリ}
+    \label{square_pinhole}
+  \end{center}
+\end{figure}
+
+
+また，このときの有効視野を図\ref{fov}に示す．
+\begin{figure}[htbp]
+  \begin{center}
+    \begin{tabular}{c}
+
+      % 1
+      \begin{minipage}{0.5\hsize}
+        \begin{center}
+          \includegraphics[clip, width=3.5cm]{./file/fov_5pinhole_circle_5mm_int_512-256.png}
+        \end{center}
+      \end{minipage}
+
+      % 2
+      \begin{minipage}{0.5\hsize}
+        \begin{center}
+          \includegraphics[clip, width=3.5cm]{./file/fov_5pinhole_square_5-5mm_int_512-256.png}
+        \end{center}
+      \end{minipage}
+
+    \end{tabular}
+  \caption{（左）円形ピンホールの有効視野，（右）矩形ピンホールの有効視野}
+  \label{fov}
+  \end{center}
+\end{figure}
+
+使用した原画像とそのプロファイルを図\ref{original_img}に示す．
+\begin{figure}[htbp]
+  \begin{center}
+    \begin{tabular}{c}
+
+      % 1
+      \begin{minipage}{0.5\hsize}
+        \begin{center}
+          \includegraphics[clip, width=2.5cm]{./file/Shepp_float_64-64-64.png}
+        \end{center}
+      \end{minipage}
+
+      % 2
+      \begin{minipage}{0.5\hsize}
+        \begin{center}
+          \includegraphics[clip, width=3.5cm]{./file/Shepp_profile.png}
+        \end{center}
+      \end{minipage}
+
+    \end{tabular}
+  \caption{（左）原画像，（右）プロファイル}
+  \label{original_img}
+  \end{center}
+\end{figure}
+
+
+
+
+
+\newpage
+\subsection{結果}
+\subsubsection{データ取得}
+モンテカルロ法を用いた光子輸送を用いて取得した投影画像のプロファイルを図\ref{proj}に示す．
+\begin{figure}[htbp]
+  \begin{center}
+    \includegraphics[width=5.5cm]{./file/projection_profile.png}\\
+    \caption{投影画像のプロファイル（真ん中のピンホール）}
+    \label{proj}
+  \end{center}
+\end{figure}
+
+\subsubsection{再構成}
+\paragraph{1ray}
+
+擬似投影線が1本の場合の再構成画像．
+
+円形ピンホールの再構成画像と矩形ピンホールの再構成画像を図\ref{reconst1}に示す．
+\begin{figure}[htbp]
+  \begin{center}
+    \begin{tabular}{c}
+      \begin{minipage}{0.5\hsize}
+        \begin{center}
+          \includegraphics[clip, width=2.5cm]{./file/ML-EM100_circle_1ray_float_128-128-128.png}
+        \end{center}
+      \end{minipage}
+      \begin{minipage}{0.5\hsize}
+        \begin{center}
+          \includegraphics[clip, width=2.5cm]{./file/ML-EM100_square_1ray_float_128-128-128.png}
+        \end{center}
+      \end{minipage}
+    \end{tabular}
+  \caption{（左）円形の場合の再構成画像，（右）矩形の場合のプロファイル}
+  \label{reconst1}
+  \end{center}
+\end{figure}
+
+このときのプロファイルを図\ref{reconst1_profile}
+\begin{figure}[htbp]
+  \begin{center}
+    \includegraphics[clip, width=5.5cm]{./file/ML-EM_100_1ray.png}
+    \caption{再構成画像のプロファイル}
+  \label{reconst1_profile}
+  \end{center}
+\end{figure}
+
+\newpage
+\paragraph{7ray}
+
+擬似投影線が7本の場合の再構成画像．
+
+円形ピンホールの再構成画像と矩形ピンホールの再構成画像を図\ref{reconst7}に示す．
+\begin{figure}[htbp]
+  \begin{center}
+    \begin{tabular}{c}
+      \begin{minipage}{0.5\hsize}
+        \begin{center}
+          \includegraphics[clip, width=2.5cm]{./file/ML-EM100_circle_7ray_float_128-128-128.png}
+        \end{center}
+      \end{minipage}
+      \begin{minipage}{0.5\hsize}
+        \begin{center}
+          \includegraphics[clip, width=2.5cm]{./file/ML-EM100_square_7ray_float_128-128-128.png}
+        \end{center}
+      \end{minipage}
+    \end{tabular}
+  \caption{（左）円形の場合の再構成画像，（右）矩形の場合のプロファイル}
+  \label{reconst7}
+  \end{center}
+\end{figure}
+
+このときのプロファイルを図\ref{reconst7_profile}
+\begin{figure}[htbp]
+  \begin{center}
+    \includegraphics[clip, width=5.5cm]{./file/ML-EM_100_7ray.png}
+    \caption{再構成画像のプロファイル}
+  \label{reconst7_profile}
+  \end{center}
+\end{figure}
+
+\paragraph{円形：12ray，矩形：16ray}
+
+円形の場合，擬似投影線が12本，矩形の場合，16本の再構成画像．
+
+円形ピンホールの再構成画像と矩形ピンホールの再構成画像を図\ref{reconst_mullti}に示す．
+\begin{figure}[htbp]
+  \begin{center}
+    \begin{tabular}{c}
+      \begin{minipage}{0.5\hsize}
+        \begin{center}
+          \includegraphics[clip, width=2.5cm]{./file/ML-EM100_circle_12ray_float_128-128-128.png}
+        \end{center}
+      \end{minipage}
+      \begin{minipage}{0.5\hsize}
+        \begin{center}
+          \includegraphics[clip, width=2.5cm]{./file/ML-EM100_square_16ray_float_128-128-128.png}
+        \end{center}
+      \end{minipage}
+    \end{tabular}
+  \caption{（左）円形の場合の再構成画像，（右）矩形の場合のプロファイル}
+  \label{reconst_mullti}
+  \end{center}
+\end{figure}
+
+\newpage
+このときのプロファイルを図\ref{reconst_multi_profile}に示す．
+\begin{figure}[htbp]
+  \begin{center}
+    \includegraphics[clip, width=5.5cm]{./file/ML-EM_100_multi_ray.png}
+    \caption{再構成画像のプロファイル}
+  \label{reconst_multi_profile}
+  \end{center}
+\end{figure}
+
+
+\section{まとめと今後の展望}
+円形ピンホールと矩形ピンホールを同条件で比較することによって，再構成結果を比較することができた．これからは，矩形ピンホールで再構成結果を綺麗にすること，そして，ピンホールの配置を決めることによって，より多くのデータを取得できるようにする．
+
+
+
+\end{document}

@@ -1,0 +1,31 @@
+--------------- condition ---------------
+date : 2019 June 15 Saturday PM 02:13:09
+
+img_w = 128
+img_h = 128
+img_d = 128
+detector_num = 180
+detector_size_w = 512
+detector_size_h = 256
+update_count = 30
+rotation_radius = 10
+distance_collimator_to_detector = 7.5
+height_collimator = 1
+width_collimator = 0.2
+d_width = 0.08
+d_height = 0.08
+img_pixel_size = 0.1
+photon_scale = 1
+max_scattering_count = 5
+cut_off_energy = 30
+medium = Shepp
+init_position = voxel
+-----------------------------------------
+
+
+
+
+
+time = 362.712[s]
+     = 6.0452[min]
+     = 0.100753[h]

@@ -1,0 +1,10 @@
+version: '3'
+
+services: 
+  gnuplot:
+    build: 
+      context: './'
+      dockerfile: 'Dockerfile'
+    container_name: 'gnuplot'
+    volumes: 
+      - './files:/home/files/'

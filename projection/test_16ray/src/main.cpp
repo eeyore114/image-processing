@@ -76,8 +76,8 @@ typedef struct {
 
 
 void launch_test_16ray(Condition cond);
-void projecion_multi_pinhole_3d(vector<float>& f, vector<float>& g, vector<float>& absorp_map, vector<int> fov, vector<float>& pinhole_theta_xy, vector<float>& pinhole_theta_zx, vector<float>& pinhole_center, vector<float>& collimator_x, vector<float>& collimator_z, vector<float>& pass_collimator, Condition cond, int is_inverse = 0);
-void set_projection_line_on_collimator(vector<float> pass_collimator, vector<float> pinhole_theta_xy, vector<float> pinhole_theta_zx, vector<float> pinhole_center, vector<float> x, vector<float> z, int pinhole_num, Condition cond);
+void projecion_multi_pinhole_3d(vector<float>& f, vector<float>& g, vector<float>& absorp_map, vector<int> fov, vector<float>& pinhole_theta_xy, vector<float>& pinhole_theta_zx, vector<float>& pinhole_center, vector<float>& collimator_x, vector<float>& collimator_z, vector<float>& pass_collimator, Condition cond, bool is_inverse = false);
+void set_projection_line_on_collimator(vector<float> &pass_collimator, vector<float> &pinhole_theta_xy, vector<float> &pinhole_theta_zx, vector<float> &pinhole_center, vector<float> &x, vector<float> &z, int pinhole_num, Condition cond);
 void rotate_axis(Eigen::Vector3f &v, float theta);
 
 
@@ -134,14 +134,15 @@ void launch_test_16ray(Condition cond)
 	// これを16rayで投影
 	// 書き込み
 	vector<float> f(cond.img_w * cond.img_h * cond.img_d, 1.0f);
+	// readRawFile("img/Brain_float_128-128-128.raw", f);
 	vector<float> f2(cond.img_w * cond.img_h * cond.img_d, 0.0f);
-	vector<float> g(cond.detector_size_w * cond.detector_size_h * cond.detector_num, 0.0f);
-	float r_x = cond.collimator_w / 2.0f;
+	vector<float> g(cond.detector_size_w * cond.detector_size_h, 0.0f);
+	float r_x = cond.collimator_w_y_axis / 2.0f;
 	float x1 = - r_x * 3. / 4;
 	float x2 =  - r_x * 1. / 4;
 	float x3 =  r_x * 1. / 4;
 	float x4 =  r_x * 3. / 4;
-	float r_y = cond.collimator_h / 2.0f;
+	float r_y = cond.collimator_w_z_axis / 2.0f;
 	float y1 = r_y * 3. / 4;
 	float y2 = r_y * 1. / 4;
 	float y3 = - r_y * 1. / 4;
@@ -164,11 +165,11 @@ void launch_test_16ray(Condition cond)
 	vector<int> fov(cond.detector_size_w * cond.detector_size_h);
 	readRawFile("img/fov_5pinhole_square_5-5mm_int_512-256.raw", fov);
 	projecion_multi_pinhole_3d(f, g, f2, fov, pinhole_theta_xy, pinhole_theta_zx, pinhole_center, collimator_x, collimator_z, pass_collimator, cond);
-	writeRawFile("result/f_proj_float_512-256-180.raw", g);
+	writeRawFile("result/f_proj_float_512-256.raw", g);
 }
 
 // FIXME : 7raysにすると画像の下の方がおかしくなる
-void projecion_multi_pinhole_3d(vector<float>& f, vector<float>& g, vector<float>& absorp_map, vector<int> fov, vector<float>& pinhole_theta_xy, vector<float>& pinhole_theta_zx, vector<float>& pinhole_center, vector<float>& collimator_x, vector<float>& collimator_z, vector<float>& pass_collimator, Condition cond, int is_inverse)
+void projecion_multi_pinhole_3d(vector<float>& f, vector<float>& g, vector<float>& absorp_map, vector<int> fov, vector<float>& pinhole_theta_xy, vector<float>& pinhole_theta_zx, vector<float>& pinhole_center, vector<float>& collimator_x, vector<float>& collimator_z, vector<float>& pass_collimator, Condition cond, bool is_inverse)
 {
 	int delta_detector = 360 / cond.detector_num;
 	// rep(idx, cond.detector_num)
@@ -178,6 +179,7 @@ void projecion_multi_pinhole_3d(vector<float>& f, vector<float>& g, vector<float
 		rep(m, cond.detector_size_h)rep(n, cond.detector_size_w)
 		{
 			int pinhole_num = fov[m * cond.detector_size_w + n];
+			
 			if(pinhole_num == -1) continue;
 			const float theta = theta_degree * M_PI / 180.0f;
 
@@ -286,7 +288,6 @@ void projecion_multi_pinhole_3d(vector<float>& f, vector<float>& g, vector<float
 						else
 						{
 							float val = f[index1] * V8 + f[index2] * V7 + f[index3] * V6 + f[index4] * V5 + f[index5] * V4 + f[index6] * V3 + f[index7] * V2 + f[index8] * V1;
-
 							/* ここってimg_pixel_sizeかけなきゃいけないの？？ */
 							// int j = round(sp(0) * cond.img_pixel_size + (cond.img_w - 1.0f) / 2.0f);
 							// int i = round((cond.img_h - 1.0f) / 2.0f - sp(1) * cond.img_pixel_size);
@@ -344,7 +345,7 @@ void rotate_axis(Eigen::Vector3f &v, float theta)
 	v = rotated;
 }
 
-void set_projection_line_on_collimator(vector<float> pass_collimator, vector<float> pinhole_theta_xy, vector<float> pinhole_theta_zx, vector<float> pinhole_center, vector<float> x, vector<float> z, int pinhole_num, Condition cond)
+void set_projection_line_on_collimator(vector<float>& pass_collimator, vector<float>& pinhole_theta_xy, vector<float>& pinhole_theta_zx, vector<float>& pinhole_center, vector<float>& x, vector<float>& z, int pinhole_num, Condition cond)
 {
 	// float y = -1. * (cond.rotation_radius);
 
